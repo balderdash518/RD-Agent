@@ -1,10 +1,13 @@
+import os
+
 import qlib
 
 qlib.init(provider_uri="~/.qlib/qlib_data/cn_data")
 
 from qlib.data import D
 
-instruments = D.instruments()
+# Stock universe of the factor source data, e.g. "all" or "csi800" (= csi300 + csi500 members).
+instruments = D.instruments(os.environ.get("FACTOR_SOURCE_INSTRUMENTS", "all"))
 fields = ["$open", "$close", "$high", "$low", "$volume", "$factor"]
 data = D.features(instruments, fields, freq="day").swaplevel().sort_index().loc["2008-12-29":].sort_index()
 

@@ -21,6 +21,7 @@ from rdagent.components.coder.model_coder.model import (
 from rdagent.core.experiment import Task
 from rdagent.core.scenario import Scenario
 from rdagent.scenarios.qlib.experiment.utils import get_data_folder_intro
+from rdagent.scenarios.qlib.experiment.execution_context import describe_execution
 from rdagent.scenarios.qlib.experiment.workspace import QlibFBWorkspace
 from rdagent.scenarios.shared.get_runtime_info import get_runtime_environment_by_env
 from rdagent.utils.agent.tpl import T
@@ -46,6 +47,7 @@ class QlibQuantScenario(Scenario):
         self._rich_style_description = deepcopy(T(".prompts:qlib_factor_rich_style_description").r())
         self._experiment_setting = deepcopy(
             T(".prompts:qlib_factor_experiment_setting").r(
+                market=QUANT_PROP_SETTING.market,
                 train_start=QUANT_PROP_SETTING.train_start,
                 train_end=QUANT_PROP_SETTING.train_end,
                 valid_start=QUANT_PROP_SETTING.valid_start,
@@ -60,15 +62,17 @@ class QlibQuantScenario(Scenario):
         quant_background = "The background of the scenario is as follows:\n" + T(".prompts:qlib_quant_background").r(
             runtime_environment=self.get_runtime_environment(),
         )
-        factor_background = "This time, I need your help with the research and development of the factor. The background of the factor scenario is as follows:\n" + T(
-            ".prompts:qlib_factor_background"
-        ).r(
-            runtime_environment=self.get_runtime_environment(tag="factor"),
+        factor_background = (
+            "This time, I need your help with the research and development of the factor. The background of the factor scenario is as follows:\n"
+            + T(".prompts:qlib_factor_background").r(
+                runtime_environment=self.get_runtime_environment(tag="factor"),
+            )
         )
-        model_background = "This time, I need your help with the research and development of the model. The background of the model scenario is as follows:\n" + T(
-            ".prompts:qlib_model_background"
-        ).r(
-            runtime_environment=self.get_runtime_environment(tag="model"),
+        model_background = (
+            "This time, I need your help with the research and development of the model. The background of the model scenario is as follows:\n"
+            + T(".prompts:qlib_model_background").r(
+                runtime_environment=self.get_runtime_environment(tag="model"),
+            )
         )
 
         # TODO: There are some issues here
@@ -146,6 +150,7 @@ class QlibQuantScenario(Scenario):
 {self.background(action)}
 ------The source dataset you can use------
 {self.get_source_data_desc()}
+{self.get_execution_context(action=action)}
 """
 
         # TODO: There are still some issues with handling source_data here
@@ -183,6 +188,13 @@ class QlibQuantScenario(Scenario):
             return common_description("model") + interface("model") + output("model") + simulator("model")
         elif action == "factor" or action == "model":
             return common_description(action) + interface(action) + output(action) + simulator(action)
+        return common_description() + interface(None) + output(None) + simulator(None)
+
+    def get_execution_context(self, plan=None, action=None) -> str:
+        features = plan.get("features") if plan is not None else None
+        return "\n".join(
+            describe_execution(branch, features) for branch in ("factor", "model") if action is None or branch == action
+        )
 
     def get_runtime_environment(self, tag: str = None) -> str:
         assert tag in [None, "factor", "model"]

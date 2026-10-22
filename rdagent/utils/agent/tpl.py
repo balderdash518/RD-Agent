@@ -13,6 +13,7 @@ from jinja2 import Environment, FunctionLoader, StrictUndefined
 
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.log import rdagent_logger as logger
+from rdagent.utils.langfuse_tracing import remember_rendered_prompt
 
 DIRNAME = Path(__file__).absolute().resolve().parent
 PROJ_PATH = DIRNAME.parent.parent  # rdagent
@@ -142,6 +143,7 @@ class RDAT:
             },
             tag="debug_tpl",
         )
+        remember_rendered_prompt(self.uri, self.template, rendered)
         return rendered
 
 

@@ -11,6 +11,7 @@ from rdagent.components.coder.factor_coder.factor import (
 from rdagent.core.experiment import Task
 from rdagent.core.scenario import Scenario
 from rdagent.scenarios.qlib.experiment.utils import get_data_folder_intro
+from rdagent.scenarios.qlib.experiment.execution_context import describe_execution
 from rdagent.scenarios.qlib.experiment.workspace import QlibFBWorkspace
 from rdagent.scenarios.shared.get_runtime_info import get_runtime_environment_by_env
 from rdagent.utils.agent.tpl import T
@@ -21,9 +22,9 @@ class QlibFactorExperiment(FactorExperiment[FactorTask, QlibFBWorkspace, FactorF
         super().__init__(*args, **kwargs)
         self.experiment_workspace = QlibFBWorkspace(template_folder_path=Path(__file__).parent / "factor_template")
         self.stdout = ""
-        self.base_features: dict[str, str] = (
-            {}
-        )  # Qlib features in operator form, e.g., "RESI5": "Resi($close, 5)/$close"
+        self.base_features: dict[
+            str, str
+        ] = {}  # Qlib features in operator form, e.g., "RESI5": "Resi($close, 5)/$close"
         self.base_feature_codes: dict[str, str] = {}  # Qlib features in code form
 
 
@@ -43,6 +44,7 @@ class QlibFactorScenario(Scenario):
         self._rich_style_description = deepcopy(T(".prompts:qlib_factor_rich_style_description").r())
         self._experiment_setting = deepcopy(
             T(".prompts:qlib_factor_experiment_setting").r(
+                market=FACTOR_PROP_SETTING.market,
                 train_start=FACTOR_PROP_SETTING.train_start,
                 train_end=FACTOR_PROP_SETTING.train_end,
                 valid_start=FACTOR_PROP_SETTING.valid_start,
@@ -85,7 +87,8 @@ class QlibFactorScenario(Scenario):
         """A static scenario describer"""
         if simple_background:
             return f"""Background of the scenario:
-{self.background}"""
+{self.background}
+{self.get_execution_context()}"""
         return f"""Background of the scenario:
 {self.background}
 The source data you can use:
@@ -96,7 +99,11 @@ The output of your code should be in the format:
 {self.output_format}
 The simulator user can use to test your factor:
 {self.simulator}
+{self.get_execution_context()}
 """
+
+    def get_execution_context(self, plan=None) -> str:
+        return describe_execution("factor", plan.get("features") if plan is not None else None)
 
     def get_runtime_environment(self):
         factor_env = get_factor_env()

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 
 from rdagent.app.qlib_rd_loop.conf import ModelBasePropSetting
@@ -6,7 +8,8 @@ from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.exception import ModelEmptyError
 from rdagent.core.utils import cache_with_pickle
 from rdagent.log import rdagent_logger as logger
-from rdagent.scenarios.qlib.developer.utils import process_factor_data
+from rdagent.oai.llm_utils import md5_hash
+from rdagent.scenarios.qlib.developer.utils import process_factor_data, qlib_data_fingerprint
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
 
@@ -24,7 +27,17 @@ class QlibModelRunner(CachedRunner[QlibModelExperiment]):
     - let LLM modify model.py
     """
 
-    @cache_with_pickle(CachedRunner.get_cache_key, CachedRunner.assign_cached_result)
+    def cache_settings(self, exp: QlibModelExperiment) -> str:
+        mbps = ModelBasePropSetting()
+        dates = [mbps.train_start, mbps.train_end, mbps.valid_start, mbps.valid_end, mbps.test_start, mbps.test_end]
+        dates += [mbps.market, mbps.benchmark]
+        template_dir = Path(__file__).resolve().parent.parent / "experiment" / "model_template"
+        templates = [
+            (p.name, md5_hash(p.read_text())) for p in sorted(template_dir.iterdir()) if p.suffix in {".yaml", ".py"}
+        ]
+        return str([dates, sorted(exp.base_features.items()), qlib_data_fingerprint(), templates])
+
+    @cache_with_pickle(CachedRunner.cache_key, CachedRunner.assign_cached_result)
     def develop(self, exp: QlibModelExperiment) -> QlibModelExperiment:
         if exp.based_experiments and exp.based_experiments[-1].result is None:
             exp.based_experiments[-1] = self.develop(exp.based_experiments[-1])
@@ -67,23 +80,25 @@ class QlibModelRunner(CachedRunner[QlibModelExperiment]):
             "valid_start": mbps.valid_start,
             "valid_end": mbps.valid_end,
             "test_start": mbps.test_start,
+            "market": mbps.market,
+            "benchmark": mbps.benchmark,
             "feature_names": str(list(exp.base_features.keys())),
             "feature_expressions": str(list(exp.base_features.values())),
+            "num_features": str(len(exp.base_features)),
         }
         if mbps.test_end is not None:
             env_to_use.update({"test_end": mbps.test_end})
 
-        training_hyperparameters = exp.sub_tasks[0].training_hyperparameters
-        if training_hyperparameters:
-            env_to_use.update(
-                {
-                    "n_epochs": str(training_hyperparameters.get("n_epochs", "100")),
-                    "lr": str(training_hyperparameters.get("lr", "2e-4")),
-                    "early_stop": str(training_hyperparameters.get("early_stop", 10)),
-                    "batch_size": str(training_hyperparameters.get("batch_size", 256)),
-                    "weight_decay": str(training_hyperparameters.get("weight_decay", 0.0001)),
-                }
-            )
+        training_hyperparameters = exp.sub_tasks[0].training_hyperparameters or {}
+        env_to_use.update(
+            {
+                "n_epochs": str(training_hyperparameters.get("n_epochs", "100")),
+                "lr": str(training_hyperparameters.get("lr", "2e-4")),
+                "early_stop": str(training_hyperparameters.get("early_stop", 10)),
+                "batch_size": str(training_hyperparameters.get("batch_size", 256)),
+                "weight_decay": str(training_hyperparameters.get("weight_decay", 0.0001)),
+            }
+        )
 
         logger.info(f"start to run {exp.sub_tasks[0].name} model")
         if exp.sub_tasks[0].model_type == "TimeSeries":

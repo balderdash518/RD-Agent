@@ -2,11 +2,11 @@ qlib_init:
     provider_uri: "~/.qlib/qlib_data/cn_data"
     region: cn
 
-market: &market csi300
-benchmark: &benchmark SH000300
+market: &market {{ market | default("csi300", true) }}
+benchmark: &benchmark {{ benchmark | default("SH000300", true) }}
 
 data_handler_config: &data_handler_config
-    start_time: {{ train_start | default("2008-01-01", true) }}
+    start_time: {{ train_start | default("2010-01-01", true) }}
     end_time: {{ test_end | default("null", true) }}
     instruments: *market
     data_loader:
@@ -31,8 +31,8 @@ data_handler_config: &data_handler_config
           kwargs:
               fields_group: feature
               clip_outlier: true
-              fit_start_time: {{ train_start | default("2008-01-01", true) }}
-              fit_end_time: {{ train_end | default("2014-12-31", true) }}
+              fit_start_time: {{ train_start | default("2010-01-01", true) }}
+              fit_end_time: {{ train_end | default("2020-12-31", true) }}
         - class: Fillna
           kwargs:
               fields_group: feature
@@ -51,7 +51,7 @@ port_analysis_config: &port_analysis_config
             topk: 50
             n_drop: 5
     backtest:
-        start_time: {{ test_start | default("2017-01-01", true) }}
+        start_time: {{ test_start | default("2023-01-01", true) }}
         end_time: {{ test_end | default("null", true) }}
         account: 100000000
         benchmark: *benchmark
@@ -89,9 +89,9 @@ task:
                 module_path: qlib.contrib.data.handler
                 kwargs: *data_handler_config
             segments:
-                train: [{{ train_start | default("2008-01-01", true) }}, {{ train_end | default("2014-12-31", true) }}]
-                valid: [{{ valid_start | default("2015-01-01", true) }}, {{ valid_end | default("2016-12-31", true) }}]
-                test: [{{ test_start | default("2017-01-01", true) }}, {{ test_end | default("null", true) }}]
+                train: [{{ train_start | default("2010-01-01", true) }}, {{ train_end | default("2020-12-31", true) }}]
+                valid: [{{ valid_start | default("2021-01-01", true) }}, {{ valid_end | default("2022-12-31", true) }}]
+                test: [{{ test_start | default("2023-01-01", true) }}, {{ test_end | default("2026-10-14", true) }}]
             {% if step_len %}step_len: {{ step_len }}{% endif %}
     record: 
         - class: SignalRecord

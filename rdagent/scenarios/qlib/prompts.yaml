@@ -1,7 +1,7 @@
 hypothesis_and_feedback: |-
   =========================================================
   {% for experiment, feedback in trace.hist %}
-  # Trial {{ loop.index }}: 
+  # Trial {{ trial_ids[loop.index0] if trial_ids is defined and trial_ids else loop.index }}:
   ## Hypothesis
   {{ experiment.hypothesis }}
   ## Specific task: 
@@ -123,7 +123,7 @@ factor_experiment_output_format: |-
           }
       },
       "factor name 2": {
-          "description": "description of factor 2, start with its type, e.g. [Machine Learning based Factor]",
+          "description": "description of factor 2, start with its type, e.g. [Liquidity Factor]",
           "formulation": "latex formulation of factor 2",
           "variables": {
               "variable or function name 1": "description of variable or function 1",
@@ -217,6 +217,8 @@ factor_feedback_generation:
     {% endfor %}
     Combined Results: 
     {{ combined_result }}
+    Current Training Log: {{ current_training_log | default("Not available") }}
+    SOTA Training Log: {{ sota_training_log | default("Not available") }}
     
     Analyze the combined result in the context of its ability to:
     1. Support or refute the hypothesis.
@@ -251,6 +253,9 @@ model_feedback_generation:
     Hypothesis: {{ sota_hypothesis.hypothesis }}
     Specific Task: {{ sota_task }}
     Code Implementation: {{ sota_code }}
+    Result: {{ sota_result }}
+    {% elif has_sota_result | default(false) %}
+    # Current SOTA system (baseline model with accepted factors):
     Result: {{ sota_result }}
     {% else %}
     # This is the first round. No previous information available. As long as the performance is not too negative (eg.ICIR is greater than 0), treat it as successful. Do not set the threshold too high.  

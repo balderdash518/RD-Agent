@@ -24,6 +24,7 @@ from rdagent.core.scenario import Scenario
 from rdagent.log.base import Message
 from rdagent.log.storage import FileStorage
 from rdagent.log.ui.qlib_report_figure import report_figure
+from rdagent.log.ui.trace_paths import discover_trace_folders
 from rdagent.scenarios.general_model.scenario import GeneralModelScenario
 from rdagent.scenarios.kaggle.experiment.scenario import KGScenario
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorScenario
@@ -73,14 +74,13 @@ def filter_log_folders(main_log_path):
     """
     Filter and return the log folders relative to the main log path.
     """
-    folders = [folder.relative_to(main_log_path) for folder in main_log_path.iterdir() if folder.is_dir()]
-    folders = sorted(folders, key=lambda x: x.name)
-    return folders
+    return discover_trace_folders(main_log_path)
 
 
 if "log_path" not in state:
     if main_log_path:
-        state.log_path = filter_log_folders(main_log_path)[0]
+        folders = filter_log_folders(main_log_path)
+        state.log_path = folders[0] if folders else None
     else:
         state.log_path = None
         st.toast(":red[**Please Set Log Path!**]", icon="⚠️")
@@ -251,7 +251,6 @@ def get_msgs_until(end_func: Callable[[Message], bool] = lambda _: True):
                     if end_func(msg):
                         break
             except StopIteration:
-                st.toast(":red[**No More Logs to Show!**]", icon="🛑")
                 break
 
 
@@ -265,12 +264,14 @@ def refresh(same_trace: bool = False):
     else:
         state.fs = FileStorage(state.log_path).iter_msg()
 
+    # Clear the previous trace before detecting the new scenario.
+    state.last_msg = None
+    state.current_tags = []
     # detect scenario
     if not same_trace:
         get_msgs_until(lambda m: isinstance(m.content, Scenario))
         if state.last_msg is None or not isinstance(state.last_msg.content, Scenario):
-            st.write(state.msgs)
-            st.toast(":red[**No Scenario Info detected**]", icon="❗")
+            st.warning("该目录没有场景记录。请选择包含 scenario/ 的运行日志目录。")
             state.scenario = None
         else:
             state.scenario = state.last_msg.content
@@ -287,6 +288,24 @@ def refresh(same_trace: bool = False):
     state.last_msg = None
     state.current_tags = []
     state.alpha_baseline_metrics = None
+
+
+def load_trace():
+    """Selecting a session should immediately display its recorded experiments."""
+    refresh()
+    if state.scenario is not None:
+        get_msgs_until(lambda _: False)
+
+
+def format_trace_folder(path: Path) -> str:
+    name = main_log_path.name if path == Path(".") else path.name
+    try:
+        started = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S-%f").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return name
+    from zoneinfo import ZoneInfo
+
+    return f"{started.astimezone(ZoneInfo('Asia/Kuala_Lumpur')):%Y-%m-%d %H:%M:%S} (UTC+8) · {name}"
 
 
 def evolving_feedback_window(wsf: FactorSingleFeedback | ModelSingleFeedback):
@@ -440,8 +459,8 @@ def summary_window():
             hypotheses_c = st.container()
 
             with hypotheses_c:
-                st.subheader("Hypotheses🏅", anchor="_hypotheses")
-                display_hypotheses(state.hypotheses, state.h_decisions, show_true_only)
+                with st.expander("Hypotheses🏅 · 全部研究假设", expanded=False):
+                    display_hypotheses(state.hypotheses, state.h_decisions, show_true_only)
 
             with chart_c:
                 if isinstance(state.scenario, QlibFactorScenario) and state.alpha_baseline_metrics is not None:
@@ -467,6 +486,71 @@ def summary_window():
                         st.plotly_chart(fig)
                     else:
                         metrics_window(df, 1, 4, height=300, colors=["red", "blue", "orange", "green"])
+
+            experiment_rows = []
+            factor_rows = []
+            for loop_id in sorted(state.hypotheses):
+                loop_msgs = state.msgs[loop_id]
+                tasks = [task for msg in loop_msgs["experiment generation"] for task in msg.content]
+                names = [getattr(task, "factor_name", getattr(task, "name", "")) for task in tasks]
+                results = loop_msgs["runner result"]
+                metrics = results[-1].content.result if results else None
+                row = {
+                    "轮次": loop_id,
+                    "本轮新增因子": ", ".join(names),
+                    "系统采纳": state.h_decisions[loop_id],
+                }
+                for metric in QLIB_SELECTED_METRICS:
+                    row[metric] = metrics.get(metric) if hasattr(metrics, "get") else None
+                experiment_rows.append(row)
+                for task in tasks:
+                    if isinstance(task, FactorTask):
+                        factor_rows.append({
+                            "轮次": loop_id,
+                            "因子名称": task.factor_name,
+                            "公式": task.factor_formulation,
+                            "说明": task.factor_description,
+                        })
+            if experiment_rows:
+                st.subheader("全部实验结果")
+                experiments = pd.DataFrame(experiment_rows)
+                st.dataframe(
+                    experiments,
+                    hide_index=True,
+                    width="stretch",
+                    column_order=["轮次", *QLIB_SELECTED_METRICS, "系统采纳", "本轮新增因子"],
+                    column_config={
+                        "轮次": st.column_config.NumberColumn(width="small"),
+                        "IC": st.column_config.NumberColumn(format="%.5f", width="small"),
+                        QLIB_SELECTED_METRICS[1]: st.column_config.NumberColumn(
+                            "税费后年化超额", format="percent", width="small"
+                        ),
+                        QLIB_SELECTED_METRICS[2]: st.column_config.NumberColumn(
+                            "IR", format="%.3f", width="small"
+                        ),
+                        QLIB_SELECTED_METRICS[3]: st.column_config.NumberColumn(
+                            "最大回撤", format="percent", width="small"
+                        ),
+                        "系统采纳": st.column_config.CheckboxColumn(width="small"),
+                        "本轮新增因子": st.column_config.TextColumn(width="medium"),
+                    },
+                )
+                st.download_button(
+                    "下载全部实验结果 CSV",
+                    experiments.to_csv(index=False).encode("utf-8-sig"),
+                    "experiment_results.csv",
+                    "text/csv",
+                )
+            if factor_rows:
+                with st.expander(f"因子目录与正式公式（{len(factor_rows)} 个因子任务）", expanded=True):
+                    factors = pd.DataFrame(factor_rows)
+                    st.dataframe(factors, hide_index=True, width="stretch")
+                    st.download_button(
+                        "下载因子目录与公式 CSV",
+                        factors.to_csv(index=False).encode("utf-8-sig"),
+                        "factor_catalog.csv",
+                        "text/csv",
+                    )
 
     elif isinstance(state.scenario, GeneralModelScenario):
         with st.container(border=True):
@@ -629,7 +713,8 @@ def feedback_window():
                     try:
                         st.write("workspace")
                         st.write(fbr[0].content.experiment_workspace.workspace_path)
-                        st.write(fbr[0].content.stdout)
+                        with st.expander("Qlib 执行日志", expanded=False):
+                            st.code(fbr[0].content.stdout or "该轮没有保存标准输出。", language="log")
                     except Exception as e:
                         st.error(f"Error displaying workspace path: {str(e)}")
                 with st.expander("**Config⚙️**", expanded=True):
@@ -757,12 +842,26 @@ with st.sidebar:
             with lc2:
                 manually = st.toggle("Manual Input")
             if manually:
-                st.text_input("log path", key="log_path", on_change=refresh, label_visibility="collapsed")
+                st.text_input("log path", key="log_path", on_change=load_trace, label_visibility="collapsed")
             else:
                 folders = filter_log_folders(main_log_path)
-                st.selectbox(f"**Select from `{main_log_path}`**", folders, key="log_path", on_change=refresh)
+                if not folders:
+                    st.warning(f"在 {main_log_path.resolve()} 中未找到运行轨迹。需要包含 scenario/ 的日志目录。")
+                    st.stop()
+                if state.log_path not in folders:
+                    state.log_path = folders[0]
+                    state.fs = None
+                st.selectbox(
+                    "选择运行记录（最新在前）",
+                    folders,
+                    key="log_path",
+                    format_func=format_trace_folder,
+                    on_change=load_trace,
+                )
+                st.caption(f"{len(folders)} 条运行记录；已过滤没有场景信息的空目录。")
+            st.caption(str((main_log_path / state.log_path).resolve()))
         else:
-            st.text_input(":blue[**log path**]", key="log_path", on_change=refresh)
+            st.text_input(":blue[**log path**]", key="log_path", on_change=load_trace)
 
     c1, c2 = st.columns([1, 1], vertical_alignment="center")
     with c1:
@@ -824,7 +923,14 @@ if debug:
                         st.write(type(state.last_msg.content))
 
 if state.log_path and state.fs is None:
-    refresh()
+    load_trace()
+
+if state.scenario is not None:
+    st.success(
+        f"已加载 {state.lround} 轮实验 · {len(state.hypotheses)} 条研究假设 · "
+        f"{len(state.metric_series)} 组评估结果（含基线）"
+    )
+    st.caption("下方可查看全部实验；在「Loops」选择轮次，查看因子公式、代码、执行结果和采纳理由。")
 
 # Main Window
 header_c1, header_c3 = st.columns([1, 6], vertical_alignment="center")
@@ -1103,7 +1209,19 @@ if state.scenario is not None:
             r_options = list(state.msgs.keys())
             if 0 in r_options:
                 r_options.remove(0)
-            round = st.radio("**Loops**", horizontal=True, options=r_options, index=state.lround - 1)
+            round = st.selectbox(
+                "Loops · 选择实验轮次查看详情",
+                options=r_options,
+                index=len(r_options) - 1,
+                format_func=lambda value: (
+                    f"第 {value} 轮 · "
+                    + ", ".join(
+                        getattr(task, "factor_name", getattr(task, "name", ""))
+                        for msg in state.msgs[value]["experiment generation"]
+                        for task in msg.content
+                    )
+                ),
+            )
         else:
             round = 1
 

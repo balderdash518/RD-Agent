@@ -96,9 +96,22 @@ class FactorFBWorkspace(FBWorkspace):
         super().__init__(*args, **kwargs)
         self.raise_exception = raise_exception
 
+    def source_data_fingerprint(self, data_type: str) -> str:
+        """Identify the source data files, so cached factor values are not reused after the data changes."""
+        if getattr(self.target_task, "version", 1) != 1:
+            return ""
+        folder = Path(
+            FACTOR_COSTEER_SETTINGS.data_folder_debug if data_type == "Debug" else FACTOR_COSTEER_SETTINGS.data_folder
+        )
+        if not folder.exists():
+            return ""
+        return ";".join(
+            f"{p.name}:{p.stat().st_size}:{int(p.stat().st_mtime)}" for p in sorted(folder.iterdir()) if p.is_file()
+        )
+
     def hash_func(self, data_type: str = "Debug") -> str:
         return (
-            md5_hash(data_type + self.file_dict["factor.py"])
+            md5_hash(data_type + self.file_dict["factor.py"] + self.source_data_fingerprint(data_type))
             if ("factor.py" in self.file_dict and not self.raise_exception)
             else None
         )

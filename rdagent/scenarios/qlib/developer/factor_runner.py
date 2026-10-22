@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -12,7 +13,8 @@ from rdagent.app.qlib_rd_loop.conf import FactorBasePropSetting
 from rdagent.components.runner import CachedRunner
 from rdagent.core.exception import FactorEmptyError
 from rdagent.log import rdagent_logger as logger
-from rdagent.scenarios.qlib.developer.utils import process_factor_data
+from rdagent.oai.llm_utils import md5_hash
+from rdagent.scenarios.qlib.developer.utils import process_factor_data, qlib_data_fingerprint
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
 
@@ -60,7 +62,29 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
         IC_max = IC_max.unstack().max(axis=0)
         return new_feature.iloc[:, IC_max[IC_max < 0.99].index]
 
-    @cache_with_pickle(CachedRunner.get_cache_key, CachedRunner.assign_cached_result)
+    def cache_settings(self, exp: QlibFactorExperiment) -> str:
+        fbps = FactorBasePropSetting()
+        dates = [fbps.train_start, fbps.train_end, fbps.valid_start, fbps.valid_end, fbps.test_start, fbps.test_end]
+        dates += [fbps.market, fbps.benchmark]
+        # The qrun templates hold the model / backtest settings, so editing them must invalidate cached results.
+        template_dir = DIRNAME.parent / "experiment" / "factor_template"
+        templates = [
+            (p.name, md5_hash(p.read_text())) for p in sorted(template_dir.iterdir()) if p.suffix in {".yaml", ".py"}
+        ]
+        return str([dates, sorted(exp.base_features.items()), qlib_data_fingerprint(), templates])
+
+    def _execute_qrun(self, exp: QlibFactorExperiment, qlib_config_name: str, run_env: dict):
+        result, stdout = exp.experiment_workspace.execute(qlib_config_name=qlib_config_name, run_env=run_env)
+        if result is None and "is malformed" in str(stdout):
+            # A truncated mlflow metric file is transient; move the broken store aside and rerun once.
+            mlruns = exp.experiment_workspace.workspace_path / "mlruns"
+            if mlruns.exists():
+                mlruns.rename(mlruns.with_name(f"mlruns.malformed.{int(time.time())}"))
+            logger.warning("mlflow metrics were malformed, rerunning the backtest once")
+            result, stdout = exp.experiment_workspace.execute(qlib_config_name=qlib_config_name, run_env=run_env)
+        return result, stdout
+
+    @cache_with_pickle(CachedRunner.cache_key, CachedRunner.assign_cached_result)
     def develop(self, exp: QlibFactorExperiment) -> QlibFactorExperiment:
         """
         Generate the experiment by processing and combining factor data,
@@ -78,6 +102,8 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
             "valid_start": fbps.valid_start,
             "valid_end": fbps.valid_end,
             "test_start": fbps.test_start,
+            "market": fbps.market,
+            "benchmark": fbps.benchmark,
             "feature_names": str(list(exp.base_features.keys())),
             "feature_expressions": str(list(exp.base_features.values())),
         }
@@ -161,12 +187,13 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
                     env_to_use.update({"dataset_cls": "DatasetH", "num_features": num_features})
 
                 # model + combined factors
-                result, stdout = exp.experiment_workspace.execute(
-                    qlib_config_name="conf_combined_factors_sota_model.yaml", run_env=env_to_use
+                result, stdout = self._execute_qrun(
+                    exp, qlib_config_name="conf_combined_factors_sota_model.yaml", run_env=env_to_use
                 )
             else:
                 # LGBM + combined factors
-                result, stdout = exp.experiment_workspace.execute(
+                result, stdout = self._execute_qrun(
+                    exp,
                     qlib_config_name="conf_combined_factors.yaml",
                     run_env=env_to_use,
                 )
@@ -182,12 +209,14 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
                 # Save the combined factors to the workspace
                 factors.to_parquet(target_path, engine="pyarrow")
                 logger.info(f"Factor data processing completed.")
-                result, stdout = exp.experiment_workspace.execute(
+                result, stdout = self._execute_qrun(
+                    exp,
                     qlib_config_name="conf_combined_factors.yaml",
                     run_env=env_to_use,
                 )
             else:
-                result, stdout = exp.experiment_workspace.execute(
+                result, stdout = self._execute_qrun(
+                    exp,
                     qlib_config_name="conf_baseline.yaml",
                     run_env=env_to_use,
                 )

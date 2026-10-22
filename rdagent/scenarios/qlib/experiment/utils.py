@@ -1,13 +1,113 @@
-import random
+import hashlib
 import re
 import shutil
+from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
+import numpy as np
 import pandas as pd
 from jinja2 import Environment, StrictUndefined
-
 from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
 from rdagent.utils.env import QTDockerEnv
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _decode_hdf_labels(values: Any) -> list[str]:
+    return [value.decode("utf-8") if isinstance(value, bytes) else str(value) for value in values]
+
+
+@lru_cache(maxsize=8)
+def _cached_hdf_profile(path_str: str, size_bytes: int, modified_ns: int) -> dict[str, Any]:
+    """Read identity and coverage without materialising a large fixed-format HDF frame."""
+
+    del size_bytes, modified_ns  # They intentionally form the cache key.
+    path = Path(path_str)
+    profile: dict[str, Any] = {
+        "file_name": path.name,
+        "sha256": _sha256_file(path),
+        "size_bytes": path.stat().st_size,
+    }
+    try:
+        with pd.HDFStore(path, mode="r") as store:
+            key = store.keys()[0]
+            storer = store.get_storer(key)
+            group = storer.group
+            children = group._v_children  # noqa: SLF001 - required for metadata-only reads of fixed HDF files
+            values_node = children["block0_values"]
+            columns = _decode_hdf_labels(children["axis0"].read())
+            profile.update({"hdf_key": key, "rows": int(values_node.shape[0]), "columns": columns})
+
+            if "axis1_level0" in children and "axis1_label0" in children and values_node.shape[0]:
+                date_levels = children["axis1_level0"]
+                date_labels = children["axis1_label0"]
+                first_date = pd.Timestamp(date_levels[int(date_labels[0])])
+                last_date = pd.Timestamp(date_levels[int(date_labels[-1])])
+                profile.update({"date_start": first_date.isoformat(), "date_end": last_date.isoformat()})
+            if "axis1_label1" in children:
+                instrument_labels = children["axis1_label1"].read()
+                profile["instruments"] = int(np.unique(instrument_labels).size)
+    except (KeyError, IndexError, TypeError, ValueError):
+        # Unexpected HDF layouts are rare for RD-Agent generated files. The
+        # fallback preserves observability without making data loading fail.
+        frame = pd.read_hdf(path)
+        profile.update(_dataframe_profile(frame))
+    return profile
+
+
+def get_hdf_file_profile(path: str | Path) -> dict[str, Any]:
+    """Return a stable, compact profile suitable for prompts and trace metadata."""
+
+    resolved = Path(path).expanduser().resolve()
+    stat = resolved.stat()
+    return dict(_cached_hdf_profile(str(resolved), stat.st_size, stat.st_mtime_ns))
+
+
+def _dataframe_profile(frame: pd.DataFrame) -> dict[str, Any]:
+    profile: dict[str, Any] = {
+        "rows": len(frame),
+        "columns": [str(column) for column in frame.columns],
+        "duplicate_index_rows": int(frame.index.duplicated().sum()),
+        "missing_rate": {str(column): round(float(rate), 6) for column, rate in frame.isna().mean().items()},
+    }
+    if isinstance(frame.index, pd.MultiIndex):
+        profile["index_names"] = [str(name) for name in frame.index.names]
+        if "datetime" in frame.index.names and len(frame):
+            dates = frame.index.get_level_values("datetime")
+            profile.update(
+                {
+                    "date_start": pd.Timestamp(dates.min()).isoformat(),
+                    "date_end": pd.Timestamp(dates.max()).isoformat(),
+                },
+            )
+        if "instrument" in frame.index.names:
+            profile["instruments"] = int(frame.index.get_level_values("instrument").nunique())
+    return profile
+
+
+def _profile_markdown(profile: dict[str, Any]) -> str:
+    lines = [
+        f"- Rows: {profile.get('rows', 'unknown')}",
+        f"- Columns: {len(profile.get('columns', []))}",
+        f"- Date range: {profile.get('date_start', 'unknown')} to {profile.get('date_end', 'unknown')}",
+        f"- Instruments: {profile.get('instruments', 'unknown')}",
+    ]
+    if profile.get("sha256"):
+        lines.append(f"- Dataset SHA-256: {profile['sha256']}")
+    if "duplicate_index_rows" in profile:
+        lines.append(f"- Duplicate index rows: {profile['duplicate_index_rows']}")
+    missing = profile.get("missing_rate") or {}
+    if missing:
+        rates = ", ".join(f"{name}={rate:.4%}" for name, rate in sorted(missing.items()))
+        lines.append("- Missing rate by column: " + rates)
+    return "\n".join(lines)
 
 
 def generate_data_folder_from_qlib():
@@ -18,7 +118,8 @@ def generate_data_folder_from_qlib():
     # Run the Qlib backtest
     execute_log = qtde.check_output(
         local_path=str(template_path),
-        entry=f"python generate.py",
+        entry="python generate.py",
+        env={"FACTOR_SOURCE_INSTRUMENTS": FACTOR_COSTEER_SETTINGS.source_data_instruments},
     )
 
     assert (Path(__file__).parent / "factor_data_template" / "daily_pv_all.h5").exists(), (
@@ -90,6 +191,11 @@ def get_file_desc(p: Path, variable_list=[]) -> str:
             else f"- Index: {df.index.name}\n"
         )
 
+        file_profile = get_hdf_file_profile(p)
+        file_profile.update(_dataframe_profile(df))
+        df_info += "\n### Dataset Coverage and Quality\n"
+        df_info += _profile_markdown(file_profile) + "\n"
+
         df_info += "\n### Columns\n"
         columns = df.dtypes.to_dict()
         grouped_columns = {}
@@ -107,13 +213,10 @@ def get_file_desc(p: Path, variable_list=[]) -> str:
             df_info += relevant_line + "\n"
         else:
             df_info += "#### All Columns:\n"
-            grouped_items = list(grouped_columns.items())
-            random.shuffle(grouped_items)
-            for prefix, cols in grouped_items:
+            for prefix, cols in sorted(grouped_columns.items()):
                 header = "Other Columns" if prefix == "other" else f"{prefix} Related Columns"
                 df_info += f"\n#### {header}:\n"
-                random.shuffle(cols)
-                line = ", ".join(f"{col}: {columns[col]}" for col in cols)
+                line = ", ".join(f"{col}: {columns[col]}" for col in sorted(cols))
                 df_info += line + "\n"
 
         if "REPORT_PERIOD" in df.columns:
@@ -129,7 +232,7 @@ def get_file_desc(p: Path, variable_list=[]) -> str:
             content=df_info,
         )
 
-    elif p.name.endswith(".md"):
+    if p.name.endswith(".md"):
         with open(p) as f:
             content = f.read()
             return JJ_TPL.render(
@@ -170,8 +273,20 @@ def get_data_folder_intro(fname_reg: str = ".*", flags=0, variable_mapping=None)
         # FIXME: (xiao) I think this is writing in a hard-coded way.
         # get data folder intro does not imply that we are generating the data folder.
         generate_data_folder_from_qlib()
+    full_data_path = Path(FACTOR_COSTEER_SETTINGS.data_folder) / "daily_pv.h5"
     content_l = []
-    for p in Path(FACTOR_COSTEER_SETTINGS.data_folder_debug).iterdir():
+    if full_data_path.exists():
+        content_l.append(
+            "# Full Execution Dataset\n\n"
+            "The summary below describes the full dataset used to execute factor code and evaluate experiments.\n\n"
+            + _profile_markdown(get_hdf_file_profile(full_data_path)),
+        )
+    content_l.append(
+        "# Coding and Debug Dataset\n\n"
+        "The following files are a smaller sample used while implementing and debugging factors. "
+        "Its coverage is not the evaluation period.",
+    )
+    for p in sorted(Path(FACTOR_COSTEER_SETTINGS.data_folder_debug).iterdir()):
         if re.match(fname_reg, p.name, flags) is not None:
             if variable_mapping:
                 content_l.append(get_file_desc(p, variable_mapping.get(p.stem, [])))

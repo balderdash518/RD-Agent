@@ -44,6 +44,10 @@ class LLMHypothesisGen(HypothesisGen):
             hypothesis_specification=context_dict["hypothesis_specification"],
             user_instruction=plan.get("user_instruction", None) if plan is not None else None,
         )
+        # Qlib exposes its actual executor settings here, including custom base-feature plans.
+        # Check the class so generic Mock scenarios and unrelated domains keep their old behavior.
+        if plan is not None and callable(getattr(type(self.scen), "get_execution_context", None)):
+            system_prompt += "\n" + self.scen.get_execution_context(plan)
         user_prompt = T(".prompts:hypothesis_gen.user_prompt").r(
             targets=self.targets,
             hypothesis_and_feedback=context_dict["hypothesis_and_feedback"],
@@ -95,7 +99,7 @@ class LLMHypothesis2Experiment(Hypothesis2Experiment[Experiment]):
         context, json_flag = self.prepare_context(hypothesis, trace)
         system_prompt = T(".prompts:hypothesis2experiment.system_prompt").r(
             targets=self.targets,
-            scenario=trace.scen.get_scenario_all_desc(filtered_tag=self.targets),
+            scenario=context.get("scenario") or trace.scen.get_scenario_all_desc(filtered_tag=self.targets),
             experiment_output_format=context["experiment_output_format"],
         )
         user_prompt = T(".prompts:hypothesis2experiment.user_prompt").r(
@@ -111,6 +115,7 @@ class LLMHypothesis2Experiment(Hypothesis2Experiment[Experiment]):
                 context["sota_hypothesis_and_feedback"] if "sota_hypothesis_and_feedback" in context else ""
             ),
             target_list=context["target_list"],
+            former_targets=context["former_targets"] if "former_targets" in context else "",
             RAG=context["RAG"],
         )
 

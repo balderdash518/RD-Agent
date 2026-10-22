@@ -1,9 +1,9 @@
 import pickle
 from pathlib import Path
+from types import SimpleNamespace
 
 import dill
 import pytest
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.serialization import UntrustedArtifactError, dumps, loads
 from rdagent.core.utils import cache_with_pickle
@@ -110,6 +110,27 @@ def test_unsigned_cache_is_treated_as_cache_miss(
     assert compute() == "fresh"
     assert calls == 1
     assert loads(cache_file.read_bytes()) == "fresh"
+
+
+@pytest.mark.offline
+def test_cache_result_exposes_transient_provenance(
+    signing_key: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert signing_key.parent.exists()
+    monkeypatch.setattr(RD_AGENT_SETTINGS, "pickle_cache_folder_path_str", str(tmp_path / "cache"))
+
+    @cache_with_pickle(lambda: "trace-key", force=True)
+    def compute() -> SimpleNamespace:
+        return SimpleNamespace(value="factor-result")
+
+    miss = compute()
+    hit = compute()
+
+    assert vars(miss)["_rdagent_cache_hit"] is False
+    assert vars(hit)["_rdagent_cache_hit"] is True
+    assert vars(hit)["_rdagent_cache_key"] == "trace-key"
 
 
 @pytest.mark.offline

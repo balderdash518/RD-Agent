@@ -6,8 +6,6 @@ from contextlib import nullcontext
 from typing import Generic, TypeVar, cast
 
 from filelock import FileLock
-from tqdm import tqdm
-
 from rdagent.core.evaluation import EvaluableObj, Evaluator, Feedback
 from rdagent.core.evolving_framework import (
     EvolvableSubjects,
@@ -18,13 +16,14 @@ from rdagent.core.evolving_framework import (
 )
 from rdagent.core.exception import EvaluatorDidNotTerminateError
 from rdagent.log import rdagent_logger as logger
+from rdagent.utils.langfuse_tracing import observe, update_observation
+from tqdm import tqdm
 
 ASpecificEvaluator = TypeVar("ASpecificEvaluator", bound=Evaluator)
 ASpecificEvolvableSubjects = TypeVar("ASpecificEvolvableSubjects", bound=EvolvableSubjects)
 
 
 class EvoAgent(ABC, Generic[ASpecificEvaluator, ASpecificEvolvableSubjects]):
-
     def __init__(self, max_loop: int, evolving_strategy: EvolvingStrategy) -> None:
         self.max_loop = max_loop
         self.evolving_strategy = evolving_strategy
@@ -41,7 +40,6 @@ class EvoAgent(ABC, Generic[ASpecificEvaluator, ASpecificEvolvableSubjects]):
 
 
 class RAGEvaluator(IterEvaluator):
-
     @abstractmethod
     def evaluate_iter(
         self,
@@ -76,7 +74,6 @@ class RAGEvaluator(IterEvaluator):
 
 
 class RAGEvoAgent(EvoAgent[RAGEvaluator, ASpecificEvolvableSubjects], Generic[ASpecificEvolvableSubjects]):
-
     def __init__(
         self,
         max_loop: int,
@@ -144,51 +141,94 @@ class RAGEvoAgent(EvoAgent[RAGEvaluator, ASpecificEvolvableSubjects], Generic[AS
     ) -> Generator[ASpecificEvolvableSubjects, None, None]:
         for evo_loop_id in tqdm(range(self.max_loop), "Implementing"):
             with logger.tag(f"evo_loop_{evo_loop_id}"):
-                # 1. RAG
-                queried_knowledge = None
-                if self.with_knowledge and self.rag is not None:
-                    # TODO: Putting the evolving trace in here doesn't actually work
-                    queried_knowledge = self.rag.query(evo, self.evolving_trace)
+                with observe(
+                    "refine-implementation",
+                    as_type="agent",
+                    input_data={"evolution_iteration": evo_loop_id},
+                    metadata={"evolution_iteration": evo_loop_id},
+                ) as evolution_observation:
+                    # 1. RAG
+                    queried_knowledge = None
+                    if self.with_knowledge and self.rag is not None:
+                        # TODO: Putting the evolving trace in here doesn't actually work
+                        with observe(
+                            "retrieve-coding-knowledge",
+                            as_type="retriever",
+                            input_data={"evolution_iteration": evo_loop_id},
+                        ) as retrieval_observation:
+                            queried_knowledge = self.rag.query(evo, self.evolving_trace)
+                            update_observation(
+                                retrieval_observation,
+                                output={"knowledge_type": type(queried_knowledge).__name__},
+                            )
 
-                # 2. evolve:
-                # A compelete solution of an evo can be break down into multiple evolving steps.
-                # Each evolving step can be evaluated separately.
-                # Assumptions:
-                # - if we want to stop on some point of the implementation, we must have a according evaluator (Otherwise, It is meaningless to stop)
-                evo_iter = self.evolving_strategy.evolve_iter(
-                    evo=evo,
-                    evolving_trace=self.evolving_trace,
-                    queried_knowledge=queried_knowledge,
-                )
-                eva_iter = eva.evaluate_iter(
-                    evolving_trace=self.evolving_trace,
-                    queried_knowledge=queried_knowledge,
-                )
-                next(eva_iter)  # kick off the first iteration
-                eval_failed_happened = False
-                for evolved_evo in evo_iter:
-                    step_feedback = eva_iter.send(evolved_evo)
-                    if not step_feedback:
-                        eval_failed_happened = True
-                        if self.stop_eval_chain_on_fail:
-                            break
-                overall_feedback = self._get_overall_feedback(eva_iter, evolved_evo, eval_failed_happened)
+                    # 2. evolve:
+                    # A complete solution can be broken down into multiple evolving steps.
+                    evo_iter = self.evolving_strategy.evolve_iter(
+                        evo=evo,
+                        evolving_trace=self.evolving_trace,
+                        queried_knowledge=queried_knowledge,
+                    )
+                    eva_iter = eva.evaluate_iter(
+                        evolving_trace=self.evolving_trace,
+                        queried_knowledge=queried_knowledge,
+                    )
+                    next(eva_iter)  # kick off the first iteration
+                    eval_failed_happened = False
+                    evaluation_step = 0
+                    for evolved_evo in evo_iter:
+                        with observe(
+                            "evaluate-implementation-step",
+                            as_type="evaluator",
+                            input_data={"evaluation_step": evaluation_step},
+                            metadata={"evaluation_step": evaluation_step},
+                        ) as evaluation_observation:
+                            step_feedback = eva_iter.send(evolved_evo)
+                            update_observation(
+                                evaluation_observation,
+                                output={
+                                    "accepted": bool(step_feedback),
+                                    "feedback_type": type(step_feedback).__name__,
+                                },
+                            )
+                        evaluation_step += 1
+                        if not step_feedback:
+                            eval_failed_happened = True
+                            if self.stop_eval_chain_on_fail:
+                                break
+                    overall_feedback = self._get_overall_feedback(eva_iter, evolved_evo, eval_failed_happened)
 
-                # 3. Pack evolve results
-                es = EvoStep[ASpecificEvolvableSubjects](evolved_evo, queried_knowledge, overall_feedback)
+                    # 3. Pack evolve results
+                    es = EvoStep[ASpecificEvolvableSubjects](evolved_evo, queried_knowledge, overall_feedback)
 
-                # 4. Evaluation
-                logger.log_object(es.feedback, tag="evolving feedback")
+                    # 4. Evaluation
+                    logger.log_object(es.feedback, tag="evolving feedback")
 
-                # 5. update trace
-                self.evolving_trace.append(es)
+                    # 5. update trace
+                    self.evolving_trace.append(es)
 
-                # 6. knowledge self-evolving
-                if self.knowledge_self_gen and self.rag is not None:
-                    with FileLock(self.filelock_path) if self.enable_filelock else nullcontext():  # type: ignore[arg-type]
-                        self.rag.load_dumped_knowledge_base()
-                        self.rag.generate_knowledge(self.evolving_trace)
-                        self.rag.dump_knowledge_base()
+                    # 6. knowledge self-evolving
+                    if self.knowledge_self_gen and self.rag is not None:
+                        with observe(
+                            "update-coding-knowledge",
+                            as_type="agent",
+                            input_data={"evolution_iteration": evo_loop_id},
+                        ) as knowledge_observation:
+                            with FileLock(self.filelock_path) if self.enable_filelock else nullcontext():  # type: ignore[arg-type]
+                                self.rag.load_dumped_knowledge_base()
+                                self.rag.generate_knowledge(self.evolving_trace)
+                                self.rag.dump_knowledge_base()
+                            update_observation(knowledge_observation, output={"status": "updated"})
+
+                    update_observation(
+                        evolution_observation,
+                        output={
+                            "status": "completed",
+                            "evaluation_steps": evaluation_step,
+                            "accepted": bool(overall_feedback),
+                            "feedback_type": type(overall_feedback).__name__,
+                        },
+                    )
 
                 yield evo  # yield the control to caller for process control and logging.
 

@@ -1,4 +1,3 @@
-import site
 import traceback
 from pathlib import Path
 from typing import Dict, Optional
@@ -95,7 +94,13 @@ class ModelFBWorkspace(FBWorkspace):
         input_value: float = 1.0,
         param_init_value: float = 1.0,
     ) -> str:
-        target_file_name = f"{batch_size}_{num_features}_{num_timesteps}_{input_value}_{param_init_value}"
+        # Cache keys must describe the execution contract, not only the model
+        # source. Otherwise a failure cached in Conda is incorrectly reused
+        # after switching to Docker, or with a different graph shape.
+        target_file_name = (
+            f"v2_{MODEL_COSTEER_SETTINGS.env_type}_{batch_size}_{num_features}_"
+            f"{num_timesteps}_{num_edges}_{input_value}_{param_init_value}"
+        )
         for code_file_name in sorted(list(self.file_dict.keys())):
             target_file_name = f"{target_file_name}_{self.file_dict[code_file_name]}"
         return md5_hash(target_file_name)
