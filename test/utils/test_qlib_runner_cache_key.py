@@ -59,9 +59,9 @@ def test_backtest_cache_key_tracks_dates_and_base_features(monkeypatch: pytest.M
 def test_backtest_cache_key_tracks_qlib_data(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = QlibFactorRunner(scen=None)
     exp = QlibFactorExperiment(sub_tasks=[])
-    monkeypatch.setattr(factor_runner, "qlib_data_fingerprint", lambda: "day.txt:1:1")
+    monkeypatch.setattr(factor_runner, "qlib_data_fingerprint", lambda *_: "day.txt:1:1")
     old_data_key = runner.get_cache_key(exp)
-    monkeypatch.setattr(factor_runner, "qlib_data_fingerprint", lambda: "day.txt:2:2")
+    monkeypatch.setattr(factor_runner, "qlib_data_fingerprint", lambda *_: "day.txt:2:2")
 
     assert runner.get_cache_key(exp) != old_data_key
 
@@ -77,3 +77,15 @@ def test_backtest_cache_key_tracks_market(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("QLIB_FACTOR_BENCHMARK", "SH000905")
 
     assert runner.get_cache_key(exp) != csi300_key
+
+
+@pytest.mark.offline
+def test_backtest_cache_key_tracks_market_profile(monkeypatch) -> None:
+    runner = QlibFactorRunner(scen=None)
+    exp = QlibFactorExperiment(sub_tasks=[])
+    cn_key = runner.get_cache_key(exp)
+    monkeypatch.setenv("QLIB_FACTOR_PROVIDER_URI", "~/.qlib/qlib_data/us_data")
+    monkeypatch.setenv("QLIB_FACTOR_REGION", "us")
+    monkeypatch.setenv("QLIB_FACTOR_LIMIT_THRESHOLD", "None")
+
+    assert runner.get_cache_key(exp) != cn_key

@@ -9,7 +9,7 @@ from rdagent.core.exception import ModelEmptyError
 from rdagent.core.utils import cache_with_pickle
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_utils import md5_hash
-from rdagent.scenarios.qlib.developer.utils import process_factor_data, qlib_data_fingerprint
+from rdagent.scenarios.qlib.developer.utils import market_profile_env, process_factor_data, qlib_data_fingerprint
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
 
@@ -30,12 +30,12 @@ class QlibModelRunner(CachedRunner[QlibModelExperiment]):
     def cache_settings(self, exp: QlibModelExperiment) -> str:
         mbps = ModelBasePropSetting()
         dates = [mbps.train_start, mbps.train_end, mbps.valid_start, mbps.valid_end, mbps.test_start, mbps.test_end]
-        dates += [mbps.market, mbps.benchmark]
+        dates += [mbps.market, mbps.benchmark, sorted(market_profile_env(mbps).items())]
         template_dir = Path(__file__).resolve().parent.parent / "experiment" / "model_template"
         templates = [
             (p.name, md5_hash(p.read_text())) for p in sorted(template_dir.iterdir()) if p.suffix in {".yaml", ".py"}
         ]
-        return str([dates, sorted(exp.base_features.items()), qlib_data_fingerprint(), templates])
+        return str([dates, sorted(exp.base_features.items()), qlib_data_fingerprint(mbps.provider_uri), templates])
 
     @cache_with_pickle(CachedRunner.cache_key, CachedRunner.assign_cached_result)
     def develop(self, exp: QlibModelExperiment) -> QlibModelExperiment:
@@ -82,6 +82,7 @@ class QlibModelRunner(CachedRunner[QlibModelExperiment]):
             "test_start": mbps.test_start,
             "market": mbps.market,
             "benchmark": mbps.benchmark,
+            **market_profile_env(mbps),
             "feature_names": str(list(exp.base_features.keys())),
             "feature_expressions": str(list(exp.base_features.values())),
             "num_features": str(len(exp.base_features)),

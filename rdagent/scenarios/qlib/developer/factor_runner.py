@@ -14,7 +14,7 @@ from rdagent.components.runner import CachedRunner
 from rdagent.core.exception import FactorEmptyError
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_utils import md5_hash
-from rdagent.scenarios.qlib.developer.utils import process_factor_data, qlib_data_fingerprint
+from rdagent.scenarios.qlib.developer.utils import market_profile_env, process_factor_data, qlib_data_fingerprint
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
 
@@ -65,13 +65,13 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
     def cache_settings(self, exp: QlibFactorExperiment) -> str:
         fbps = FactorBasePropSetting()
         dates = [fbps.train_start, fbps.train_end, fbps.valid_start, fbps.valid_end, fbps.test_start, fbps.test_end]
-        dates += [fbps.market, fbps.benchmark]
+        dates += [fbps.market, fbps.benchmark, sorted(market_profile_env(fbps).items())]
         # The qrun templates hold the model / backtest settings, so editing them must invalidate cached results.
         template_dir = DIRNAME.parent / "experiment" / "factor_template"
         templates = [
             (p.name, md5_hash(p.read_text())) for p in sorted(template_dir.iterdir()) if p.suffix in {".yaml", ".py"}
         ]
-        return str([dates, sorted(exp.base_features.items()), qlib_data_fingerprint(), templates])
+        return str([dates, sorted(exp.base_features.items()), qlib_data_fingerprint(fbps.provider_uri), templates])
 
     def _execute_qrun(self, exp: QlibFactorExperiment, qlib_config_name: str, run_env: dict):
         result, stdout = exp.experiment_workspace.execute(qlib_config_name=qlib_config_name, run_env=run_env)
@@ -104,6 +104,7 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
             "test_start": fbps.test_start,
             "market": fbps.market,
             "benchmark": fbps.benchmark,
+            **market_profile_env(fbps),
             "feature_names": str(list(exp.base_features.keys())),
             "feature_expressions": str(list(exp.base_features.values())),
         }

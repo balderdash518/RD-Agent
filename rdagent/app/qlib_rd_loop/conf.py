@@ -5,7 +5,7 @@ from rdagent.components.workflow.conf import BasePropSetting
 
 
 class ModelBasePropSetting(BasePropSetting):
-    model_config = SettingsConfigDict(env_prefix="QLIB_MODEL_", protected_namespaces=())
+    model_config = SettingsConfigDict(env_prefix="QLIB_MODEL_", protected_namespaces=(), env_parse_none_str="None")
 
     # 1) override base settings
     scen: str = "rdagent.scenarios.qlib.experiment.model_experiment.QlibModelScenario"
@@ -53,9 +53,30 @@ class ModelBasePropSetting(BasePropSetting):
     benchmark: str = "SH000905"
     """Benchmark index for excess returns, e.g. SH000300 or SH000905"""
 
+    provider_uri: str = "~/.qlib/qlib_data/cn_data"
+    """qlib data directory (~/.qlib is mounted at the same path in the qlib Docker image)"""
+
+    region: str = "cn"
+    """qlib region: cn or us"""
+
+    limit_threshold: float | None = 0.095
+    """Daily price-limit threshold; None for markets without price limits (e.g. US)"""
+
+    deal_price: str = "close"
+    """Price used to fill orders in the backtest"""
+
+    open_cost: float = 0.0005
+    """Buy cost rate"""
+
+    close_cost: float = 0.0015
+    """Sell cost rate (A-share default includes stamp duty)"""
+
+    min_cost: float = 5
+    """Minimum cost per trade, in account currency"""
+
 
 class FactorBasePropSetting(BasePropSetting):
-    model_config = SettingsConfigDict(env_prefix="QLIB_FACTOR_", protected_namespaces=())
+    model_config = SettingsConfigDict(env_prefix="QLIB_FACTOR_", protected_namespaces=(), env_parse_none_str="None")
 
     # 1) override base settings
     scen: str = "rdagent.scenarios.qlib.experiment.factor_experiment.QlibFactorScenario"
@@ -103,6 +124,27 @@ class FactorBasePropSetting(BasePropSetting):
     benchmark: str = "SH000905"
     """Benchmark index for excess returns, e.g. SH000300 or SH000905"""
 
+    provider_uri: str = "~/.qlib/qlib_data/cn_data"
+    """qlib data directory (~/.qlib is mounted at the same path in the qlib Docker image)"""
+
+    region: str = "cn"
+    """qlib region: cn or us"""
+
+    limit_threshold: float | None = 0.095
+    """Daily price-limit threshold; None for markets without price limits (e.g. US)"""
+
+    deal_price: str = "close"
+    """Price used to fill orders in the backtest"""
+
+    open_cost: float = 0.0005
+    """Buy cost rate"""
+
+    close_cost: float = 0.0015
+    """Sell cost rate (A-share default includes stamp duty)"""
+
+    min_cost: float = 5
+    """Minimum cost per trade, in account currency"""
+
     acceptance_policy: Literal["llm", "ic"] = "llm"
     """Use repository LLM feedback by default; opt into the local IC gate explicitly."""
 
@@ -130,7 +172,7 @@ class FactorFromReportPropSetting(FactorBasePropSetting):
 
 
 class QuantBasePropSetting(BasePropSetting):
-    model_config = SettingsConfigDict(env_prefix="QLIB_QUANT_", protected_namespaces=())
+    model_config = SettingsConfigDict(env_prefix="QLIB_QUANT_", protected_namespaces=(), env_parse_none_str="None")
 
     # 1) override base settings
     scen: str = "rdagent.scenarios.qlib.experiment.quant_experiment.QlibQuantScenario"
@@ -194,6 +236,27 @@ class QuantBasePropSetting(BasePropSetting):
 
     benchmark: str = "SH000905"
     """Benchmark index for excess returns, e.g. SH000300 or SH000905"""
+
+    provider_uri: str = "~/.qlib/qlib_data/cn_data"
+    """qlib data directory (~/.qlib is mounted at the same path in the qlib Docker image)"""
+
+    region: str = "cn"
+    """qlib region: cn or us"""
+
+    limit_threshold: float | None = 0.095
+    """Daily price-limit threshold; None for markets without price limits (e.g. US)"""
+
+    deal_price: str = "close"
+    """Price used to fill orders in the backtest"""
+
+    open_cost: float = 0.0005
+    """Buy cost rate"""
+
+    close_cost: float = 0.0015
+    """Sell cost rate (A-share default includes stamp duty)"""
+
+    min_cost: float = 5
+    """Minimum cost per trade, in account currency"""
 
 
 FACTOR_PROP_SETTING = FactorBasePropSetting()

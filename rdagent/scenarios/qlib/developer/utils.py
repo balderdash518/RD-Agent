@@ -201,3 +201,16 @@ def qlib_data_fingerprint(provider_uri: str = "~/.qlib/qlib_data/cn_data") -> st
                 stat = path.stat()
                 digest.update(f"{path.relative_to(root)}:{stat.st_size}:{stat.st_mtime_ns}:{stat.st_ctime_ns}".encode())
     return digest.hexdigest()
+
+
+def market_profile_env(settings) -> dict[str, str]:
+    """qrun template variables for the data source and exchange rules of one market."""
+    return {
+        "provider_uri": settings.provider_uri,
+        "region": settings.region,
+        "limit_threshold": "null" if settings.limit_threshold is None else str(settings.limit_threshold),
+        "deal_price": settings.deal_price,
+        "open_cost": str(settings.open_cost),
+        "close_cost": str(settings.close_cost),
+        "min_cost": str(settings.min_cost),
+    }

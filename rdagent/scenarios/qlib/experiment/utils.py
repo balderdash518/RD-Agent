@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from jinja2 import Environment, StrictUndefined
+from rdagent.app.qlib_rd_loop.conf import FactorBasePropSetting
 from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
 from rdagent.utils.env import QTDockerEnv
 
@@ -112,6 +113,9 @@ def _profile_markdown(profile: dict[str, Any]) -> str:
 
 def generate_data_folder_from_qlib():
     template_path = Path(__file__).parent / "factor_data_template"
+    # Remove previous outputs so a failed generate.py cannot leave another dataset's files to be copied.
+    for stale in ("daily_pv_all.h5", "daily_pv_debug.h5"):
+        (template_path / stale).unlink(missing_ok=True)
     qtde = QTDockerEnv()
     qtde.prepare()
 
@@ -119,7 +123,11 @@ def generate_data_folder_from_qlib():
     execute_log = qtde.check_output(
         local_path=str(template_path),
         entry="python generate.py",
-        env={"FACTOR_SOURCE_INSTRUMENTS": FACTOR_COSTEER_SETTINGS.source_data_instruments},
+        env={
+            "FACTOR_SOURCE_INSTRUMENTS": FACTOR_COSTEER_SETTINGS.source_data_instruments,
+            "QLIB_PROVIDER_URI": FactorBasePropSetting().provider_uri,
+            "QLIB_REGION": FactorBasePropSetting().region,
+        },
     )
 
     assert (Path(__file__).parent / "factor_data_template" / "daily_pv_all.h5").exists(), (

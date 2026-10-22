@@ -31,8 +31,8 @@ ALL_METRICS = feedback.IMPORTANT_METRICS + [
 @pytest.fixture(autouse=True)
 def no_render_logging(monkeypatch):
     monkeypatch.setattr("rdagent.utils.agent.tpl.logger.log_object", lambda *args, **kwargs: None)
-    monkeypatch.setattr("rdagent.scenarios.qlib.developer.factor_runner.qlib_data_fingerprint", lambda: "fixture-data")
-    monkeypatch.setattr("rdagent.scenarios.qlib.developer.model_runner.qlib_data_fingerprint", lambda: "fixture-data")
+    monkeypatch.setattr("rdagent.scenarios.qlib.developer.factor_runner.qlib_data_fingerprint", lambda *_: "fixture-data")
+    monkeypatch.setattr("rdagent.scenarios.qlib.developer.model_runner.qlib_data_fingerprint", lambda *_: "fixture-data")
 
 
 def hypothesis(name="test", action=None):
