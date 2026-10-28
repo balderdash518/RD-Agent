@@ -1050,6 +1050,8 @@ class QlibDockerConf(DockerConf):
     image: str = "local_qlib:latest"
     mount_path: str = "/workspace/qlib_workspace/"
     default_entry: str = "qrun conf.yaml"
+    # qlib records runs in a file-based `./mlruns`; recent MLflow refuses it unless explicitly allowed.
+    env_dict: dict = {"MLFLOW_ALLOW_FILE_STORE": "true"}
     extra_volumes: dict = {
         str(Path("~/.qlib/").expanduser().resolve().absolute()): {
             "bind": "/root/.qlib/",

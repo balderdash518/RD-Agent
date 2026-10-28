@@ -11,6 +11,7 @@ from rdagent.components.coder.model_coder.model import (
 from rdagent.core.experiment import Task
 from rdagent.core.scenario import Scenario
 from rdagent.scenarios.qlib.experiment.workspace import QlibFBWorkspace
+from rdagent.scenarios.qlib.experiment.execution_context import describe_execution
 from rdagent.scenarios.shared.get_runtime_info import get_runtime_environment_by_env
 from rdagent.utils.agent.tpl import T
 
@@ -37,6 +38,7 @@ class QlibModelScenario(Scenario):
         self._rich_style_description = deepcopy(T(".prompts:qlib_model_rich_style_description").r())
         self._experiment_setting = deepcopy(
             T(".prompts:qlib_model_experiment_setting").r(
+                market=MODEL_PROP_SETTING.market,
                 train_start=MODEL_PROP_SETTING.train_start,
                 train_end=MODEL_PROP_SETTING.train_end,
                 valid_start=MODEL_PROP_SETTING.valid_start,
@@ -85,7 +87,11 @@ The output of your code should be in the format:
 {self.output_format}
 The simulator user can use to test your model:
 {self.simulator}
+{self.get_execution_context()}
 """
+
+    def get_execution_context(self, plan=None) -> str:
+        return describe_execution("model", plan.get("features") if plan is not None else None)
 
     def get_runtime_environment(self):
         model_env = get_model_env()

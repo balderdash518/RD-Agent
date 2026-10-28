@@ -9,6 +9,8 @@ fire
 fuzzywuzzy
 openai
 litellm>=1.73  # to support `from litellm import get_valid_models`
+langfuse>=4.18.0,<5
+opentelemetry-exporter-otlp>=1.45.1,<2
 azure.identity
 pyarrow
 rich

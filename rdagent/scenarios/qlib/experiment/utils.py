@@ -19,6 +19,7 @@ def generate_data_folder_from_qlib():
     execute_log = qtde.check_output(
         local_path=str(template_path),
         entry=f"python generate.py",
+        env={"FACTOR_SOURCE_INSTRUMENTS": FACTOR_COSTEER_SETTINGS.source_data_instruments},
     )
 
     assert (Path(__file__).parent / "factor_data_template" / "daily_pv_all.h5").exists(), (

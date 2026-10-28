@@ -11,28 +11,45 @@ Postscripts:
 import asyncio
 import concurrent.futures
 import copy
+import multiprocessing
 import multiprocessing.queues
 import os
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, cast
 
 import psutil
-from tqdm.auto import tqdm
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.serialization import dump as secure_pickle_dump
 from rdagent.core.serialization import load as secure_pickle_load
 from rdagent.log import rdagent_logger as logger
 from rdagent.log.conf import LOG_SETTINGS
 from rdagent.log.timer import RD_Agent_TIMER_wrapper, RDAgentTimer
+from rdagent.utils.langfuse_tracing import (
+    agent_run,
+    flush,
+    inject_trace_context,
+    invoke_with_trace_context,
+    new_run_id,
+    observe,
+    run_metadata,
+    scenario_name,
+    score_failure,
+    score_result,
+    session_id_from_log_path,
+    summarize_result,
+    update_observation,
+    workflow_step_name,
+    workflow_step_type,
+)
 from rdagent.utils.workflow.tracking import WorkflowTracker
+from tqdm.auto import tqdm
 
 
 class LoopMeta(type):
-
     @staticmethod
     def _get_steps(bases: tuple[type, ...]) -> list[str]:
         """
@@ -99,7 +116,7 @@ class LoopBase:
     skip_loop_error: tuple[type[BaseException], ...] = ()  # you can define a list of error that will skip current loop
     skip_loop_error_stepname: str | None = None  # if skip_loop_error exception happens, what's the next step to work on
     withdraw_loop_error: tuple[
-        type[BaseException], ...
+        type[BaseException], ...,
     ] = ()  # you can define a list of error that will withdraw current loop
 
     EXCEPTION_KEY = "_EXCEPTION"
@@ -130,8 +147,8 @@ class LoopBase:
         self.tracker = WorkflowTracker(self)  # Initialize tracker with this LoopBase instance
 
         # progress control
-        self.loop_n: Optional[int] = None  # remain loop count
-        self.step_n: Optional[int] = None  # remain step count
+        self.loop_n: int | None = None  # remain loop count
+        self.step_n: int | None = None  # remain step count
 
         self.semaphores: dict[str, asyncio.Semaphore] = {}
 
@@ -170,7 +187,7 @@ class LoopBase:
             self._pbar.close()
             del self._pbar
 
-    def _check_exit_conditions_on_step(self, loop_id: Optional[int] = None, step_id: Optional[int] = None) -> None:
+    def _check_exit_conditions_on_step(self, loop_id: int | None = None, step_id: int | None = None) -> None:
         """Check if the loop should continue or terminate.
 
         Raises
@@ -189,8 +206,58 @@ class LoopBase:
             if self.timer.is_timeout():
                 logger.warning("Timeout, exiting the loop.")
                 raise self.LoopTerminationError("Timer timeout")
-            else:
-                logger.info(f"Timer remaining time: {self.timer.remain_time()}")
+            logger.info(f"Timer remaining time: {self.timer.remain_time()}")
+
+    async def _invoke_step(
+        self,
+        func: Callable[..., Any],
+        *,
+        li: int,
+        si: int,
+        name: str,
+        force_subproc: bool,
+    ) -> Any:
+        """Run one workflow function inside a semantically typed observation."""
+
+        with observe(
+            workflow_step_name(name),
+            as_type=workflow_step_type(name),
+            input_data={"loop_index": li, "step_index": si, "step": name},
+            metadata={"loop_index": li, "step_index": si, "step": name},
+        ) as step_observation:
+            try:
+                if force_subproc:
+                    curr_loop = asyncio.get_running_loop()
+                    carrier = inject_trace_context()
+                    # OpenTelemetry's BatchSpanProcessor is not fork-safe. A
+                    # fresh spawned worker can initialize its own exporter and
+                    # attach the explicitly propagated parent context.
+                    with concurrent.futures.ProcessPoolExecutor(
+                        mp_context=multiprocessing.get_context("spawn"),
+                    ) as pool:
+                        result = await curr_loop.run_in_executor(
+                            pool,
+                            invoke_with_trace_context,
+                            copy.deepcopy(func),
+                            copy.deepcopy(self.loop_prev_out[li]),
+                            carrier,
+                        )
+                elif asyncio.iscoroutinefunction(func):
+                    result = await func(self.loop_prev_out[li])
+                else:
+                    result = func(self.loop_prev_out[li])
+            except Exception as error:
+                update_observation(
+                    step_observation,
+                    output={"status": "failed", "error_type": type(error).__name__, "error": str(error)[:4000]},
+                    level="ERROR",
+                    status_message=f"{type(error).__name__}: {error}",
+                )
+                score_failure(step_observation, error)
+                raise
+            update_observation(step_observation, output=summarize_result(name, result))
+            score_result(step_observation, name, result)
+            return result
 
     async def _run_step(self, li: int, force_subproc: bool = False) -> None:
         """Execute a single step (next unrun step) in the workflow (async version with force_subproc option).
@@ -212,13 +279,12 @@ class LoopBase:
         name = self.steps[si]
 
         async with self.get_semaphore(name):
-
             logger.info(f"Start Loop {li}, Step {si}: {name}")
             self.tracker.log_workflow_state()
 
             with logger.tag(f"Loop_{li}.{name}"):
                 start = datetime.now(timezone.utc)
-                func: Callable[..., Any] = cast(Callable[..., Any], getattr(self, name))
+                func: Callable[..., Any] = cast("Callable[..., Any]", getattr(self, name))
 
                 next_step_idx = si + 1
                 step_forward = True
@@ -227,22 +293,13 @@ class LoopBase:
                 self.loop_prev_out[li][self.LOOP_IDX_KEY] = li
 
                 try:
-                    # Call function with current loop's output, await if coroutine or use ProcessPoolExecutor for sync if required
-                    if force_subproc:
-                        curr_loop = asyncio.get_running_loop()
-                        with concurrent.futures.ProcessPoolExecutor() as pool:
-                            # Using deepcopy is to avoid triggering errors like "RuntimeError: dictionary changed size during iteration"
-                            # GUESS: Some content in self.loop_prev_out[li] may be in the middle of being changed.
-                            result = await curr_loop.run_in_executor(
-                                pool, copy.deepcopy(func), copy.deepcopy(self.loop_prev_out[li])
-                            )
-                    else:
-                        # auto determine whether to run async or sync
-                        if asyncio.iscoroutinefunction(func):
-                            result = await func(self.loop_prev_out[li])
-                        else:
-                            # Default: run sync function directly
-                            result = func(self.loop_prev_out[li])
+                    result = await self._invoke_step(
+                        func,
+                        li=li,
+                        si=si,
+                        name=name,
+                        force_subproc=force_subproc,
+                    )
                     # Store result in the nested dictionary
                     self.loop_prev_out[li][name] = result
                 except Exception as e:
@@ -252,14 +309,13 @@ class LoopBase:
                             next_step_idx = self.steps.index(self.skip_loop_error_stepname)
                             if next_step_idx <= si:
                                 raise RuntimeError(
-                                    f"Cannot skip backwards or to same step. Current: {si} ({name}), Target: {next_step_idx} ({self.skip_loop_error_stepname})"
+                                    f"Cannot skip backwards or to same step. Current: {si} ({name}), Target: {next_step_idx} ({self.skip_loop_error_stepname})",
                                 ) from e
+                        # Default: jump to feedback step if exists, otherwise jump to the last step (record)
+                        elif "feedback" in self.steps:
+                            next_step_idx = self.steps.index("feedback")
                         else:
-                            # Default: jump to feedback step if exists, otherwise jump to the last step (record)
-                            if "feedback" in self.steps:
-                                next_step_idx = self.steps.index("feedback")
-                            else:
-                                next_step_idx = len(self.steps) - 1
+                            next_step_idx = len(self.steps) - 1
                         self.loop_prev_out[li][name] = None
                         self.loop_prev_out[li][self.EXCEPTION_KEY] = e
                     elif isinstance(e, self.withdraw_loop_error):
@@ -352,6 +408,58 @@ class LoopBase:
                     await self._run_step(li, force_subproc=RD_AGENT_SETTINGS.is_force_subproc())
 
     async def run(self, step_n: int | None = None, loop_n: int | None = None, all_duration: str | None = None) -> None:
+        """Run the workflow as one trace containing typed agent stages."""
+
+        scenario = scenario_name(self)
+        run_id = new_run_id()
+        trace_input = {
+            "run_id": run_id,
+            "scenario": scenario,
+            "step_limit": step_n,
+            "loop_limit": loop_n,
+            "duration_limit": all_duration,
+            "resumed": bool(self.loop_trace),
+        }
+        try:
+            with agent_run(
+                "run-rd-agent",
+                input_data=trace_input,
+                session_id=session_id_from_log_path(LOG_SETTINGS.trace_path),
+                tags=["rdagent", scenario, "agent-chain"],
+                metadata=run_metadata(self, scenario, run_id),
+            ) as run_observation:
+                try:
+                    await self._run(step_n=step_n, loop_n=loop_n, all_duration=all_duration)
+                except BaseException as error:
+                    update_observation(
+                        run_observation,
+                        output={"status": "failed", "run_id": run_id, "error_type": type(error).__name__},
+                        level="ERROR",
+                        status_message=f"{type(error).__name__}: {error}",
+                    )
+                    score_failure(run_observation, error)
+                    raise
+                else:
+                    update_observation(
+                        run_observation,
+                        output={
+                            "status": "completed",
+                            "run_id": run_id,
+                            "loops_started": self.loop_idx,
+                            "recorded_experiments": len(getattr(getattr(self, "trace", None), "hist", []) or []),
+                        },
+                    )
+        finally:
+            # Flush after the root context exits so the completed root span is
+            # included, which matters for short-lived CLI processes.
+            flush()
+
+    async def _run(
+        self,
+        step_n: int | None = None,
+        loop_n: int | None = None,
+        all_duration: str | None = None,
+    ) -> None:
         """Run the workflow loop.
 
         Parameters
@@ -497,7 +605,7 @@ class LoopBase:
             session_folder = path.parent.parent
 
         with path.open("rb") as f:
-            session = cast(LoopBase, secure_pickle_load(f))
+            session = cast("LoopBase", secure_pickle_load(f))
 
         # set session folder
         if checkout:

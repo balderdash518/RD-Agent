@@ -5,6 +5,7 @@ from rdagent.components.coder.model_coder.model import ModelExperiment, ModelTas
 from rdagent.components.proposal import ModelHypothesis2Experiment, ModelHypothesisGen
 from rdagent.core.proposal import Hypothesis, Scenario, Trace
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
+from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.experiment.quant_experiment import QlibQuantScenario
 from rdagent.utils.agent.tpl import T
 
@@ -50,8 +51,8 @@ class QlibModelHypothesisGen(ModelHypothesisGen):
         context_dict = {
             "hypothesis_and_feedback": hypothesis_and_feedback,
             "last_hypothesis_and_feedback": last_hypothesis_and_feedback,
-            "SOTA_hypothesis_and_feedback": sota_hypothesis_and_feedback,
-            "RAG": "1. In Quantitative Finance, market data could be time-series, and GRU model/LSTM model are suitable for them. Do not generate GNN model as for now.\n2. The training data consists of less than 1 million samples for the training set and approximately 250,000 samples for the validation set. Please design the hyperparameters accordingly and control the model size. This has a significant impact on the training results. If you believe that the previous model itself is good but the training hyperparameters or model hyperparameters are not optimal, you can return the same model and adjust these parameters instead.",
+            "sota_hypothesis_and_feedback": sota_hypothesis_and_feedback,
+            "RAG": "In Quantitative Finance, market data may be time-series, and GRU/LSTM models are suitable. Do not generate GNN models for now. Choose model size using the actual configured dataset and training logs, not a fixed assumed sample count. If the architecture is good but training or model hyperparameters are suboptimal, you can keep the architecture and adjust those parameters.",
             "hypothesis_output_format": T("scenarios.qlib.prompts:hypothesis_output_format").r(),
             "hypothesis_specification": T("scenarios.qlib.prompts:model_hypothesis_specification").r(),
         }
@@ -87,6 +88,7 @@ class QlibModelHypothesis2Experiment(ModelHypothesis2Experiment):
             hypothesis_and_feedback = "No previous hypothesis and feedback available since it's the first round."
         else:
             specific_trace = Trace(trace.scen)
+            trial_ids = []
             for i in range(len(trace.hist) - 1, -1, -1):
                 if not hasattr(trace.hist[i][0].hypothesis, "action") or trace.hist[i][0].hypothesis.action == "model":
                     if last_experiment is None:
@@ -96,10 +98,11 @@ class QlibModelHypothesis2Experiment(ModelHypothesis2Experiment):
                         sota_experiment = trace.hist[i][0]
                         sota_feedback = trace.hist[i][1]
                     specific_trace.hist.insert(0, trace.hist[i])
+                    trial_ids.insert(0, i + 1)
             if len(specific_trace.hist) > 0:
-                specific_trace.hist.reverse()
                 hypothesis_and_feedback = T("scenarios.qlib.prompts:hypothesis_and_feedback").r(
                     trace=specific_trace,
+                    trial_ids=trial_ids,
                 )
             else:
                 hypothesis_and_feedback = "No previous hypothesis and feedback available."
@@ -125,10 +128,10 @@ class QlibModelHypothesis2Experiment(ModelHypothesis2Experiment):
             "scenario": scenario,
             "hypothesis_and_feedback": hypothesis_and_feedback,
             "last_hypothesis_and_feedback": last_hypothesis_and_feedback,
-            "SOTA_hypothesis_and_feedback": sota_hypothesis_and_feedback,
+            "sota_hypothesis_and_feedback": sota_hypothesis_and_feedback,
             "experiment_output_format": experiment_output_format,
             "target_list": [],
-            "RAG": "Note, the training data consists of less than 1 million samples for the training set and approximately 250,000 samples for the validation set. Please design the hyperparameters accordingly and control the model size. This has a significant impact on the training results. If you believe that the previous model itself is good but the training hyperparameters or model hyperparameters are not optimal, you can return the same model and adjust these parameters instead.",
+            "RAG": "Choose model size using the actual configured dataset and training logs, not a fixed assumed sample count. You can keep a good architecture and adjust its training or model hyperparameters.",
         }, True
 
     def convert_response(self, response: str, hypothesis: Hypothesis, trace: Trace) -> ModelExperiment:
@@ -155,5 +158,19 @@ class QlibModelHypothesis2Experiment(ModelHypothesis2Experiment):
                 )
             )
         exp = QlibModelExperiment(tasks, hypothesis=hypothesis)
-        exp.based_experiments = [t[0] for t in trace.hist if t[1] and isinstance(t[0], ModelExperiment)]
+        exp.based_experiments = [t[0] for t in trace.hist if t[1] and isinstance(t[0], QlibModelExperiment)]
+        if getattr(hypothesis, "action", None) == "model":
+            factors = [
+                experiment
+                for experiment, feedback in trace.hist
+                if feedback.decision and isinstance(experiment, QlibFactorExperiment)
+            ]
+            # The runners expect the baseline-factor sentinel before the accepted factor sets.
+            # Keep the most recent model last, as the comparison baseline.
+            exp.based_experiments = ([QlibFactorExperiment([])] + factors if factors else []) + exp.based_experiments[
+                -1:
+            ]
+        exp.comparison_experiment = next(
+            (experiment for experiment, feedback in reversed(trace.hist) if feedback.decision), None
+        )
         return exp

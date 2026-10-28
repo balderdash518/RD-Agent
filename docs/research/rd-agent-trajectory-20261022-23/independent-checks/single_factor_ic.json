@@ -1,0 +1,1066 @@
+[
+ {
+  "loop": 0,
+  "factor": "AmihudIlliquidity20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.004881062267337312,
+   "t": 1.354795180230671,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0035092113635914793,
+   "t": 0.9106902021542531,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 0,
+  "factor": "CloseToHigh10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.004435117333917097,
+   "t": -0.5277479117043619,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0036523602787109266,
+   "t": 0.3971705067059154,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 0,
+  "factor": "VolumeSurge5D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0017579785218401398,
+   "t": 0.5866497254283438,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0031521657640841373,
+   "t": -1.1086691615685063,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 1,
+  "factor": "AmihudDollarVolume20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.003915345562055384,
+   "t": -0.7000462533565193,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0023900597868378465,
+   "t": -0.37056628340508757,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 1,
+  "factor": "ATRNormalizedCloseToHigh10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0009892501241320097,
+   "t": 0.15033800698244199,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.004604309258273751,
+   "t": 0.6377363726347649,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 1,
+  "factor": "VolumeSurge20DRobust",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.004589389654772355,
+   "t": 1.3903582612454706,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0034780307542550174,
+   "t": -1.1282479365960443,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 2,
+  "factor": "CrossSectionalRankAmihudDollarVolume20D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": -0.003915345562055384,
+   "t": -0.7000462533565193,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0023900597868378465,
+   "t": -0.37056628340508757,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 2,
+  "factor": "MA5ATRNormalizedCloseToHigh10D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": 0.0010617431096319144,
+   "t": 0.16238088773652895,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.005905219557897,
+   "t": 0.8129554353029275,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 2,
+  "factor": "MA5OvernightGap",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": -0.0016175492750822227,
+   "t": -0.2171825497508656,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.008909115013894344,
+   "t": -1.084599603812949,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.0,
+   null
+  ]
+ },
+ {
+  "loop": 3,
+  "factor": "CrossSectionalRankMA5OvernightGap",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.0016175492750822227,
+   "t": -0.2171825497508656,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.008909115013894344,
+   "t": -1.084599603812949,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   1.0,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 3,
+  "factor": "CrossSectionalRankMA5ATRNormalizedCloseToHigh10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0010617431096319144,
+   "t": 0.16238088773652895,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.005905219557897,
+   "t": 0.8129554353029275,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   1.0,
+   "MA5ATRNormalizedCloseToHigh10D"
+  ]
+ },
+ {
+  "loop": 3,
+  "factor": "CrossSectionalRankAmihudTrueRangeDollarVolume20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0051290876247467075,
+   "t": 1.40111240984544,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.004217745049446952,
+   "t": 1.1090389361856772,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.5564332048671381,
+   "CrossSectionalRankAmihudDollarVolume20D"
+  ]
+ },
+ {
+  "loop": 4,
+  "factor": "MA5CrossSectionalRankAmihudTrueRangeDollarVolume20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.005144166517144448,
+   "t": 1.4026826300022024,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.00415354406393983,
+   "t": 1.093230813809462,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.5558271606780741,
+   "CrossSectionalRankAmihudDollarVolume20D"
+  ]
+ },
+ {
+  "loop": 5,
+  "factor": "DownsideLiquidityAsymmetry10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.010155094352849423,
+   "t": 1.4647657698516914,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.011163219208216743,
+   "t": -1.6710319602773944,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.20460242827257158,
+   "MA5ATRNormalizedCloseToHigh10D"
+  ]
+ },
+ {
+  "loop": 6,
+  "factor": "CrossSectionalRankDownsideMinusUpsideAmihud10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0054928068316731065,
+   "t": 1.4122690130096058,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.005770821187930954,
+   "t": -1.5276951313872946,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.13227984769933843,
+   "MA5ATRNormalizedCloseToHigh10D"
+  ]
+ },
+ {
+  "loop": 7,
+  "factor": "CrossSectionalRankShortTermReversal10D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": 0.008090033276623505,
+   "t": 0.9681544391899922,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0010997460887210025,
+   "t": 0.12515870642821852,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.4086074845507901,
+   "MA5ATRNormalizedCloseToHigh10D"
+  ]
+ },
+ {
+  "loop": 7,
+  "factor": "CrossSectionalRankMA5IntradayReturn",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": -0.003274619056859775,
+   "t": -0.4610203894601551,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.008037846692585658,
+   "t": -1.0128137496214842,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.2770620696511694,
+   "MA5ATRNormalizedCloseToHigh10D"
+  ]
+ },
+ {
+  "loop": 8,
+  "factor": "CrossSectionalRankVolatilityScaledShortTermReversal10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.008476478834203958,
+   "t": 1.0739072909905323,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0017450443461543889,
+   "t": -0.21797117693804802,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.9361290598444553,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 8,
+  "factor": "CrossSectionalRankVolatilityScaledMA5IntradayReturn",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.004258605767576774,
+   "t": -0.6259521196374978,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.005033233398973051,
+   "t": -0.6674811498857042,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.9677369569508338,
+   "CrossSectionalRankMA5IntradayReturn"
+  ]
+ },
+ {
+  "loop": 9,
+  "factor": "CrossSectionalRankRSI14D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.006991680050147209,
+   "t": -0.883756146075012,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0030955947830015843,
+   "t": 0.3932735507786689,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.7761166763616439,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 9,
+  "factor": "CrossSectionalRank20DReversal",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.01103540808099188,
+   "t": 1.3033806173880593,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.001479485383122045,
+   "t": -0.1673337747956007,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.661541828486175,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 9,
+  "factor": "CrossSectionalRank20DSkewness",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.004337037235476037,
+   "t": -0.9978660544589572,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.00013246877711142716,
+   "t": -0.029007859578830526,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.20856612648895387,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 10,
+  "factor": "CrossSectionalRankCloseLocation5D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": -0.0030196246684962907,
+   "t": -0.5181673264314887,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.002627148852828267,
+   "t": -0.3902304393244818,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.7016377506798555,
+   "CrossSectionalRankMA5IntradayReturn"
+  ]
+ },
+ {
+  "loop": 10,
+  "factor": "CrossSectionalRankVolumeWeightedReturn5D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": -0.0015128042214757201,
+   "t": -0.20187157203594297,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.011479417544469237,
+   "t": -1.348414898310545,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.7902057690468837,
+   "CrossSectionalRankMA5IntradayReturn"
+  ]
+ },
+ {
+  "loop": 10,
+  "factor": "CrossSectionalRankDownsideDeviation20D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": 0.004955886271748119,
+   "t": 0.5335341651005197,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.012833270362606333,
+   "t": -1.2437442291528484,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.27523603425109455,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 11,
+  "factor": "CrossSectionalRankVolatilityScaledCloseLocation20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.0017496404768088786,
+   "t": -0.17737287241111502,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.015490870270240369,
+   "t": 1.4040925517898482,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.8369946999240159,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 12,
+  "factor": "CrossSectionalRankDownsideSemideviationScaledCloseLocation20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.006065203113583457,
+   "t": -0.6328833208688522,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.013033290836325982,
+   "t": 1.2258648949371884,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.9410863657030234,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 13,
+  "factor": "CrossSectionalRankOpenLocation5D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0022994116474677256,
+   "t": 0.3630544270709604,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.006409331769595647,
+   "t": 0.9349391646298847,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.7562940123240572,
+   "CrossSectionalRankMA5IntradayReturn"
+  ]
+ },
+ {
+  "loop": 13,
+  "factor": "CrossSectionalRankUpVolumeRatio10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.004530315213625586,
+   "t": -0.7086884567176935,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.002891614688858941,
+   "t": -0.46610910061529837,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.6968386123251946,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 14,
+  "factor": "CrossSectionalRankPriceZScore20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.006436791772536737,
+   "t": -0.8331524622691276,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0007520069695725924,
+   "t": -0.09238272717979845,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.8209643710205096,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 14,
+  "factor": "CrossSectionalRankVolumeWeightedCloseOpen20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.00750639761587753,
+   "t": -1.1956157565026124,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0018900440837382473,
+   "t": -0.293715784030441,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.4479420078388599,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 15,
+  "factor": "CrossSectionalRankVolatilityScaledResidualMomentum10D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": -0.0008674015551545981,
+   "t": -0.12607303034176573,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0012751467189211722,
+   "t": 0.19054223698776343,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.6263203425021371,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 16,
+  "factor": "CrossSectionalRankRobustVolatilityScaledResidualMomentum5D60D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0001365159751759182,
+   "t": 0.0203617908716555,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.004284814405310346,
+   "t": -0.559535402085799,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.8448734903047468,
+   "CrossSectionalRankVolumeWeightedReturn5D"
+  ]
+ },
+ {
+  "loop": 17,
+  "factor": "CrossSectionalRankOvernightResidualMomentum5D20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.004836832137939435,
+   "t": 1.0311394369164246,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0012793871986246192,
+   "t": -0.21291360995157171,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.6856265295572863,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 18,
+  "factor": "CrossSectionalRankOvernightResidualReversal5D20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.004446815068242411,
+   "t": -0.9736052527322795,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0017302525327713813,
+   "t": 0.29598947152925537,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.6839919752318806,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 19,
+  "factor": "CrossSectionalRankIdiosyncraticVolatility20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.0008369043590834131,
+   "t": -0.08585395990147442,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.015387793500366911,
+   "t": 1.4014397572409574,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.8266954875029124,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 19,
+  "factor": "CrossSectionalRankMaxDailyReturn20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0025947745641545098,
+   "t": 0.3306783743668851,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.010538588654638782,
+   "t": 1.1629833893526276,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.40914048516904844,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 19,
+  "factor": "CrossSectionalRankTrendBeta20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.01057305903006805,
+   "t": -1.2279294922773076,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.002013917312352924,
+   "t": 0.23644319864775074,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.6495320965985957,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 20,
+  "factor": "CrossSectionalRankMaxDailyReturn20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0025947745641545098,
+   "t": 0.3306783743668851,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.010538588654638782,
+   "t": 1.1629833893526276,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.40914048516904844,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 20,
+  "factor": "CrossSectionalRankIdiosyncraticVolatilityEW60D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0031240249619925546,
+   "t": 0.42871393706828953,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.011156766830185266,
+   "t": 1.4104577812112553,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.64259293521576,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 21,
+  "factor": "CrossSectionalRankResidualMaxReturn20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.0004609042698628512,
+   "t": -0.10005220134838441,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0011800800816570809,
+   "t": 0.3437019984345005,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.2288207082889227,
+   "CrossSectionalRankDownsideDeviation20D"
+  ]
+ },
+ {
+  "loop": 21,
+  "factor": "CrossSectionalRankPriceAcceleration20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0012207184826723708,
+   "t": 0.1532403411878041,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.003375479181461385,
+   "t": -0.42541747896706217,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.8030504313447786,
+   "CrossSectionalRankVolatilityScaledResidualMomentum10D"
+  ]
+ },
+ {
+  "loop": 22,
+  "factor": "CrossSectionalRankRangePosition20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.007811704808819282,
+   "t": -1.150641563458123,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0048602715453040565,
+   "t": 0.7120777852438959,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.4946712008278749,
+   "CrossSectionalRankCloseLocation5D"
+  ]
+ },
+ {
+  "loop": 23,
+  "factor": "CrossSectionalRankEWMA10DCloseLocation",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.0052144827386328176,
+   "t": -0.8483272594945782,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 5.170449477932789e-06,
+   "t": 0.0007612976801941361,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.8671478492913391,
+   "CrossSectionalRankCloseLocation5D"
+  ]
+ },
+ {
+  "loop": 23,
+  "factor": "CrossSectionalRankVolumeWeightedCloseLocation10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.008266253042326435,
+   "t": -1.3856116849233577,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.001666958779670625,
+   "t": 0.26435223047252304,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.6429225905343728,
+   "CrossSectionalRankCloseLocation5D"
+  ]
+ },
+ {
+  "loop": 24,
+  "factor": "CrossSectionalRankDynamicCloseLocationZ20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0027751865707788086,
+   "t": 0.48254712479294704,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0018307226763887654,
+   "t": 0.3109154830363599,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.30656874959765723,
+   "CrossSectionalRankCloseLocation5D"
+  ]
+ },
+ {
+  "loop": 25,
+  "factor": "CrossSectionalRankVWAPDeviationATR20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.006376340215485049,
+   "t": -0.8348519472042436,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.00034783893848629345,
+   "t": -0.04350603669916738,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.8159324486218732,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 26,
+  "factor": "CrossSectionalRankOvernightGapATRVolume10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0075620973456955965,
+   "t": 1.1190660268937385,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.006828363373361525,
+   "t": -0.9223652500641621,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.31247630444669483,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 27,
+  "factor": "CrossSectionalRankEW5OvernightGapRV20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0008483711287309798,
+   "t": 0.13340379735099342,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0036054655108607022,
+   "t": -0.5397756822372999,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.8875238128697666,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 28,
+  "factor": "CrossSectionalRankMA10ScaledOvernightGapRV40D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0018746521584841916,
+   "t": 0.3002488572559726,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.002698143469695281,
+   "t": -0.411039715516411,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.7854951281445975,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 29,
+  "factor": "CrossSectionalRankEW3OvernightGapEW10RV10D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0012624407742178132,
+   "t": 0.20373526498233177,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.008484883044702506,
+   "t": -1.2622728850666558,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.6507808865867039,
+   "MA5OvernightGap"
+  ]
+ },
+ {
+  "loop": 30,
+  "factor": "CrossSectionalRankRollingLinearReturnForecast20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.0012307186561790998,
+   "t": 0.2633494606498355,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.004682441794667816,
+   "t": -0.9230792176128301,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.278320022402455,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 30,
+  "factor": "CrossSectionalRankUpDayConsistency20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.006643825809772239,
+   "t": -0.9949404895789734,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.0027803800486814333,
+   "t": 0.4297108370211267,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.43190866781288834,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 31,
+  "factor": "CrossSectionalRankRidgeReturnForecast20D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": 0.00048130942339956933,
+   "t": 0.10168074260702038,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.00178543168166046,
+   "t": -0.36752987320344566,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.2670509847716582,
+   "CrossSectionalRankShortTermReversal10D"
+  ]
+ },
+ {
+  "loop": 32,
+  "factor": "CrossSectionalRankRidgeResidualVolatilityScaled3D",
+  "accepted": true,
+  "valid_2018_19": {
+   "rank_ic": 0.005259014396058231,
+   "t": 0.9656201535766885,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": -0.0020104165840691985,
+   "t": -0.38445973365282043,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   0.13980339065440137,
+   "CrossSectionalRankVolumeWeightedReturn5D"
+  ]
+ },
+ {
+  "loop": 35,
+  "factor": "CrossSectionalRankPriceDelay40D",
+  "accepted": false,
+  "valid_2018_19": {
+   "rank_ic": -0.000863455866097651,
+   "t": -0.19261845683025655,
+   "days": 503
+  },
+  "select_2020_22": {
+   "rank_ic": 0.00025628130412382315,
+   "t": 0.07670591972870353,
+   "days": 756
+  },
+  "max_corr_with_sota": [
+   -0.04943478156243838,
+   "CrossSectionalRankAmihudDollarVolume20D"
+  ]
+ }
+]

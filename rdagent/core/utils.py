@@ -7,12 +7,12 @@ import multiprocessing as mp
 import pickle
 import random
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, ClassVar, NoReturn, cast
 
 from filelock import FileLock
 from fuzzywuzzy import fuzz  # type: ignore[import-untyped]
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.serialization import UntrustedArtifactError
 from rdagent.core.serialization import dump as secure_pickle_dump
@@ -156,6 +156,13 @@ def multiprocessing_wrapper(func_calls: list[tuple[Callable, tuple]], n: int) ->
         return [result.get() for result in results]
 
 
+def _mark_cache_result(result: Any, *, hit: bool, key: str) -> None:
+    """Attach transient cache provenance when the return value supports attributes."""
+
+    with suppress(TypeError):
+        vars(result).update({"_rdagent_cache_hit": hit, "_rdagent_cache_key": key})
+
+
 def cache_with_pickle(hash_func: Callable, post_process_func: Callable | None = None, force: bool = False) -> Callable:
     """
     This decorator will cache the return value of the function with pickle.
@@ -199,9 +206,11 @@ def cache_with_pickle(hash_func: Callable, post_process_func: Callable | None = 
                 except UntrustedArtifactError:
                     cache_file.unlink(missing_ok=True)
                 else:
-                    return (
+                    result = (
                         post_process_func(*args, cached_res=cached_res, **kwargs) if post_process_func else cached_res
                     )
+                    _mark_cache_result(result, hit=True, key=hash_key)
+                    return result
 
             if RD_AGENT_SETTINGS.use_file_lock:
                 with FileLock(lock_file):
@@ -211,6 +220,11 @@ def cache_with_pickle(hash_func: Callable, post_process_func: Callable | None = 
 
             with cache_file.open("wb") as f:
                 secure_pickle_dump(result, f)
+
+            # Mark only the returned in-memory object. The marker is added
+            # after serialization so a later cache hit cannot inherit a stale
+            # "miss" value from the pickle.
+            _mark_cache_result(result, hit=False, key=hash_key)
 
             return result
 

@@ -1,0 +1,8 @@
+# qrun results (csi500, train 2010-17, valid 2018-19, metrics on 2020-22); last field = LightGBM best iteration
+repro | IC,0.015748436682758556 Rank IC,0.018427734276981047  | [42] train's l2: 0.995903 valid's l2: 0.997766
+noise1 | IC,0.015738750796911952 Rank IC,0.018333056771245464  | [40] train's l2: 0.995976 valid's l2: 0.99777
+noise2 | IC,0.015746127332588643 Rank IC,0.018263689834425945  | [35] train's l2: 0.996174 valid's l2: 0.997765
+noise3 | IC,0.015509804411179554 Rank IC,0.018262019219906032  | [37] train's l2: 0.996094 valid's l2: 0.997765
+shuffle1 | IC,0.0157718873776097 Rank IC,0.01846609672777129  | [42] train's l2: 0.995905 valid's l2: 0.997761
+prescreen5 | 1day.excess_return_with_cost.annualized_return,0.05582944374583956 IC,0.016948726072389116 Rank IC,0.02158590569212229  | [56] train's l2: 0.99529 valid's l2: 0.997675
+prescreen1 | 1day.excess_return_with_cost.annualized_return,0.05788352161637737 IC,0.015623130262840405 Rank IC,0.021002815352653127  | [40] train's l2: 0.995921 valid's l2: 0.9977

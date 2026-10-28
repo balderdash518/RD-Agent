@@ -1,0 +1,223 @@
+{
+  "market_relative_duplicate": {
+    "n_common_rows": 1951100,
+    "max_abs_difference": 0.0,
+    "equal_fraction": 1.0,
+    "correlation": 1.0
+  },
+  "best_vs_start_paired_ic": {
+    "n_days": 728,
+    "mean": 0.0017750822678344225,
+    "block": 20,
+    "ci95": [
+      -0.0010168227223836146,
+      0.00450418890446891
+    ]
+  },
+  "baseline_workspace": "/home/yifei/projects/RD-Agent-codex-repro/git_ignore_folder/RD-Agent_workspace/61a160293e2040db89ea6fcc163764fe",
+  "yearly_best_vs_base_ic": {
+    "2020": {
+      "baseline": 0.020212068632767945,
+      "best": 0.021341219218342068
+    },
+    "2021": {
+      "baseline": 0.004930328991697027,
+      "best": 0.007789784047108618
+    },
+    "2022": {
+      "baseline": 0.016789253683139577,
+      "best": 0.01812408310555252
+    }
+  },
+  "chosen_comparisons": {
+    "19": {
+      "n_days": 728,
+      "mean": -0.0021197849161737146,
+      "block": 20,
+      "ci95": [
+        -0.005324705794313743,
+        0.0011072476449815372
+      ]
+    },
+    "32": {
+      "n_days": 728,
+      "mean": -0.00016193329803574033,
+      "block": 20,
+      "ci95": [
+        -0.0021260516211469432,
+        0.0017620813613464879
+      ]
+    },
+    "34": {
+      "n_days": 728,
+      "mean": -0.0010879610845854772,
+      "block": 20,
+      "ci95": [
+        -0.0028837751548354278,
+        0.0005841000069459158
+      ]
+    },
+    "35": {
+      "n_days": 728,
+      "mean": -0.00040717336136703855,
+      "block": 20,
+      "ci95": [
+        -0.0019066502535809065,
+        0.0010922123555014477
+      ]
+    }
+  },
+  "token_cost_examples": [
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "prompt_tokens": 3153,
+      "completion_tokens": 495,
+      "cost": 0.00426624,
+      "accumulated_cost": 4.62365376
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "prompt_tokens": 4330,
+      "completion_tokens": 2388,
+      "cost": 0.00725208,
+      "accumulated_cost": 4.61169852
+    }
+  ],
+  "cost_summary": {
+    "total": 4.629818160000002,
+    "post_loop8": 3.909640680000001,
+    "prompt_tokens_total": 3255930
+  },
+  "llm_record_structure": {
+    "0": [
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_0/direct_exp_gen/debug_llm/370766/2026-10-20_15-26-57-526221.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 13136,
+        "input_chars": 11567,
+        "base_feature_mentions": []
+      },
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_0/direct_exp_gen/debug_llm/370766/2026-10-20_15-27-16-601777.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 14015,
+        "input_chars": 10845,
+        "base_feature_mentions": []
+      }
+    ],
+    "8": [
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_8/direct_exp_gen/debug_llm/370766/2026-10-20_16-40-32-416021.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 56390,
+        "input_chars": 54275,
+        "base_feature_mentions": []
+      },
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_8/direct_exp_gen/debug_llm/370766/2026-10-20_16-40-55-137088.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 52141,
+        "input_chars": 48084,
+        "base_feature_mentions": []
+      }
+    ],
+    "17": [
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_17/direct_exp_gen/debug_llm/370766/2026-10-20_17-45-13-173780.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 107148,
+        "input_chars": 104460,
+        "base_feature_mentions": []
+      },
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_17/direct_exp_gen/debug_llm/370766/2026-10-20_17-45-53-411078.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 102382,
+        "input_chars": 95841,
+        "base_feature_mentions": []
+      }
+    ],
+    "35": [
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_35/direct_exp_gen/debug_llm/370766/2026-10-20_20-28-36-908865.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 211695,
+        "input_chars": 205708,
+        "base_feature_mentions": []
+      },
+      {
+        "path": "/home/yifei/projects/RD-Agent-codex-repro/log/2026-10-20_15-26-09-427246/Loop_35/direct_exp_gen/debug_llm/370766/2026-10-20_20-28-52-073368.pkl",
+        "type": "dict",
+        "keys": [
+          "system",
+          "user",
+          "resp",
+          "start",
+          "end"
+        ],
+        "length": 205154,
+        "input_chars": 197599,
+        "base_feature_mentions": []
+      }
+    ]
+  },
+  "summary": {
+    "tasks": 79,
+    "implemented_tasks": 79,
+    "post_best_tasks": 56,
+    "positive_delta_ic_rounds": [
+      1,
+      8
+    ],
+    "accepted_delta_ic": 0.0017750822678343995
+  }
+}

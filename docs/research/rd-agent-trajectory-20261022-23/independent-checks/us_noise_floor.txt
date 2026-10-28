@@ -1,0 +1,7 @@
+repro | 1day.excess_return_with_cost.annualized_return,0.11390153048984912 IC,0.007228820552488778 1day.excess_return_with_cost.max_drawdown,-0.3658725808987354 Rank IC,0.0097911515670745  | [1] train's l2: 0.997567 valid's l2: 0.997913
+noise1 | 1day.excess_return_with_cost.annualized_return,0.08228662888858099 IC,0.007011954235710218 1day.excess_return_with_cost.max_drawdown,-0.3975197944741249 Rank IC,0.009563254935195204  | [1] train's l2: 0.997567 valid's l2: 0.997913
+noise2 | IC,0.006985381779037288 Rank IC,0.009702641459488428  | [1] train's l2: 0.997567 valid's l2: 0.997913
+noise3 | 1day.excess_return_with_cost.annualized_return,0.07058810758221054 IC,0.007452333025906445 1day.excess_return_with_cost.max_drawdown,-0.40774265785971664 Rank IC,0.009817273791515004  | [1] train's l2: 0.997567 valid's l2: 0.997913
+noise4 | 1day.excess_return_with_cost.annualized_return,0.08125801591744938 IC,0.007490267154702161 1day.excess_return_with_cost.max_drawdown,-0.2998956959555593 Rank IC,0.00950922254436183  | [1] train's l2: 0.997567 valid's l2: 0.997913
+noise5 | 1day.excess_return_with_cost.annualized_return,0.08615845925664697 IC,0.008041726062585243 1day.excess_return_with_cost.max_drawdown,-0.3470431621238722 Rank IC,0.011259260991791952  | [3] train's l2: 0.997539 valid's l2: 0.997912
+done

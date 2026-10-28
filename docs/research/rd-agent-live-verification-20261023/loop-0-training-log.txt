@@ -1,0 +1,6 @@
+Training until validation scores don't improve for 50 rounds
+[20]	train's l2: 0.997337	valid's l2: 0.997912
+[40]	train's l2: 0.997129	valid's l2: 0.997922
+[60]	train's l2: 0.996929	valid's l2: 0.997922
+Early stopping, best iteration is:
+[18]	train's l2: 0.99736	valid's l2: 0.997911

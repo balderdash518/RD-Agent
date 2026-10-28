@@ -1,4 +1,6 @@
+from pathlib import Path
 from typing import List
+import hashlib
 
 import pandas as pd
 
@@ -175,3 +177,27 @@ def process_factor_data(exp_or_list: List[QlibFactorExperiment] | QlibFactorExpe
         raise FactorEmptyError(
             f"No valid factor data found to merge (in process_factor_data) because of {error_message}."
         )
+
+
+def qlib_data_fingerprint(provider_uri: str = "~/.qlib/qlib_data/cn_data") -> str:
+    """Metadata fingerprint of prices, constituents, calendars and exported factor input.
+
+    Calendar-only fingerprints miss price corrections on existing trading days. Nanosecond
+    mtime and ctime cover ordinary file rewrites without reading multi-GB source HDFs.
+    """
+    from rdagent.components.coder.factor_coder.config import FactorCoSTEERSettings
+
+    provider = Path(provider_uri).expanduser().resolve()
+    roots = [provider / name for name in ("calendars", "instruments", "features")]
+    roots.append(Path(FactorCoSTEERSettings().data_folder).expanduser().resolve())
+    digest = hashlib.sha256()
+    for root in roots:
+        digest.update(str(root).encode())
+        if not root.exists():
+            digest.update(b":missing")
+            continue
+        for path in sorted(root.rglob("*")):
+            if path.is_file():
+                stat = path.stat()
+                digest.update(f"{path.relative_to(root)}:{stat.st_size}:{stat.st_mtime_ns}:{stat.st_ctime_ns}".encode())
+    return digest.hexdigest()

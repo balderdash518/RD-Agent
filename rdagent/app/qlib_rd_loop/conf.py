@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic_settings import SettingsConfigDict
 
@@ -48,6 +48,12 @@ class ModelBasePropSetting(BasePropSetting):
     test_end: Optional[str] = "2020-08-01"
     """End date of the test / backtest segment"""
 
+    market: str = "csi300"
+    """Qlib instrument universe, e.g. csi300 or csi500"""
+
+    benchmark: str = "SH000300"
+    """Benchmark index for excess returns, e.g. SH000300 or SH000905"""
+
 
 class FactorBasePropSetting(BasePropSetting):
     model_config = SettingsConfigDict(env_prefix="QLIB_FACTOR_", protected_namespaces=())
@@ -91,6 +97,22 @@ class FactorBasePropSetting(BasePropSetting):
 
     test_end: Optional[str] = "2020-08-01"
     """End date of the test / backtest segment"""
+
+    market: str = "csi300"
+    """Qlib instrument universe, e.g. csi300 or csi500"""
+
+    benchmark: str = "SH000300"
+    """Benchmark index for excess returns, e.g. SH000300 or SH000905"""
+
+
+    acceptance_policy: Literal["llm", "ic"] = "llm"
+    """Use repository LLM feedback by default; opt into the local IC gate explicitly."""
+
+    accept_min_ic_gain: float = 0.0005
+    """Minimum IC gain when the optional IC acceptance policy is enabled."""
+
+    accept_min_rank_ic_gain: float = 0.0
+    """Minimum Rank IC gain when the optional IC acceptance policy is enabled."""
 
 
 class FactorFromReportPropSetting(FactorBasePropSetting):
@@ -168,6 +190,12 @@ class QuantBasePropSetting(BasePropSetting):
 
     test_end: Optional[str] = "2020-08-01"
     """End date of the test / backtest segment"""
+
+    market: str = "csi300"
+    """Qlib instrument universe, e.g. csi300 or csi500"""
+
+    benchmark: str = "SH000300"
+    """Benchmark index for excess returns, e.g. SH000300 or SH000905"""
 
 
 FACTOR_PROP_SETTING = FactorBasePropSetting()

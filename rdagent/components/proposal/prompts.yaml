@@ -67,5 +67,9 @@ hypothesis2experiment:
     The SOTA hypothesis and the corresponding feedback are as follows:
     {{ sota_hypothesis_and_feedback }}
     {% endif %}
+    {% if former_targets %}
+    Former proposed {{ targets }} (trial number, whether accepted into SOTA, formulation):
+    {{ former_targets }}
+    {% endif %}
 
     Please generate the new {{ targets }} based on the information above.
