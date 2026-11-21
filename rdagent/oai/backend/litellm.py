@@ -127,7 +127,7 @@ class LiteLLMAPIBackend(APIBackend):
         model: str
         temperature: float
         max_tokens: int | None
-        reasoning_effort: Literal["low", "medium", "high"] | None
+        reasoning_effort: Literal["none", "low", "medium", "high"] | None
 
     def get_complete_kwargs(self) -> CompleteKwargs:
         """
@@ -149,8 +149,8 @@ class LiteLLMAPIBackend(APIBackend):
                     if "max_tokens" in mc:
                         max_tokens = int(mc["max_tokens"])
                     if "reasoning_effort" in mc:
-                        if mc["reasoning_effort"] in ["low", "medium", "high"]:
-                            reasoning_effort = cast("Literal['low', 'medium', 'high']", mc["reasoning_effort"])
+                        if mc["reasoning_effort"] in ["none", "low", "medium", "high"]:
+                            reasoning_effort = cast("Literal['none', 'low', 'medium', 'high']", mc["reasoning_effort"])
                         else:
                             reasoning_effort = None
                     break

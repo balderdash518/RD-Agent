@@ -170,7 +170,7 @@ rdagent fin_factor --loop-n 1
 
 ### 数据与市场
 
-- **数据：** `~/.qlib/qlib_data/cn_data` 现在是 [chenditc/investment_data](https://github.com/chenditc/investment_data) 2026-10-18 版（交易日 2000-01-04 至 2026-10-16，含 CSI300/500/800/1000 成分股历史和 SH000300、SH000905 等指数）。下载包已用 GitHub 记录的 SHA-256 校验。旧数据保留在 `cn_data_2020_backup`。
+- **数据（2026-11-21 起，所有实验统一快照）：** `~/.qlib/qlib_data/cn_data` 是指向 `cn_data_20261025` 的软链接，内容为 [chenditc/investment_data](https://github.com/chenditc/investment_data) release 2026-10-25 的 `qlib_bin.tar.gz`（569,210,863 字节，SHA-256 `0a2974da97b4737e503ecddeea8bb3b2179e0e16ea0fb19fa373ff14155bf315`，已校验；交易日 2000-01-04 至 2026-10-23，`day_future.txt` 到 2026-12-31；instruments 含 all/csi300/csi500/csi800/csi1000/csiall 历史成分，point-in-time）。manifest 存于数据目录 `qlib_bin.manifest.json`。字段：open/high/low/close/vwap 为复权价，`$factor` 为复权因子，`$volume`=成交手数/factor，`$amount` 单位千元；没有市值、换手率、ST、涨跌停标记，停牌日为缺失行。换数据只需改这个软链接（如以后的 AlphaData cn_2026.11，届时单位不同），并把 `git_ignore_folder/factor_implementation_source_data*` 移走让 `daily_pv.h5` 重新生成。此前的 10-18 版保留在 `cn_data_20261018`（对应 `daily_pv.h5` 在 `*.20261018_backup`），更早的在 `cn_data_2020_backup`。
 - **市场和基准可配置：** `.env` 中 `QLIB_FACTOR_MARKET` / `QLIB_FACTOR_BENCHMARK`（模型场景用 `QLIB_MODEL_*`）。当前为 `csi500` / `SH000905`；改回沪深 300 用 `csi300` / `SH000300`。
 - **因子源数据：** `FACTOR_CoSTEER_SOURCE_DATA_INSTRUMENTS=csi800`，即 CSI300 + CSI500 成分股。换数据或换股票池后，把 `git_ignore_folder/factor_implementation_source_data*` 两个目录移走，下次运行会自动重新生成。
 
@@ -287,3 +287,24 @@ rdagent ui --port 19900 --log-dir <日志目录>
 ### 需要 Kaggle / 数据科学场景
 
 除了模型密钥，还需要 Kaggle API 凭证、已接受比赛规则的数据集，以及场景专用环境变量。先确保上面的通用健康检查通过，再按仓库 `README.md` 的 Data Science / Kaggle 小节配置，避免把通用环境问题和数据权限问题混在一起排查。
+
+## 统一对比实验设定（2026-11-21 起，RD-Agent R&D-Factor 作为基线）
+
+- **数据**：`~/.qlib/qlib_data/cn_data` → `cn_data_20261025`（chenditc/investment_data 2026-10-25，SHA-256 前 12 位 `0a2974da97b4`）。因子源数据 `FACTOR_CoSTEER_SOURCE_DATA_INSTRUMENTS=all`（官方默认全市场，三个股票池共用），`git_ignore_folder/factor_implementation_source_data/daily_pv.h5` 截为 2014-07-01–2021-12-31（2026-11-21，6,267,279 行、4,754 只；官方 generate.py 是 2008-12-29 至数据末尾，完整版备份在 `factor_implementation_source_data.all_20081229_20261023_backup`）。原因：统一规则要求挖掘期间不读测试期与 2026 年数据，2014-07–2015-12 为长窗口缓冲；全量文件在 10 GB WSL 内存下第 2 轮 OOM 卡死。核对：重叠段数值逐一相同；2016–2021 的 20 日动量逐值相同，250 日波动率只差浮点舍入（相对 1e-14），三个股票池 2016–2021 成分股 100% 覆盖。窗口超过约 370 个交易日或从数据开头累积的因子在 2016 年初会与全量版不同。提示词中的"Full Execution Dataset"概况随之显示截后的范围。调试样本（2018–2019，100 只）不变。只用量价数据；论文附录 C.2 提到的 Wind 基本面字段不在开源实现和论文附录 E.1 的提示词中，未使用。
+- **股票池**：`market_profiles/cn_csi300.profile`、`cn_csi500.profile`、`cn_csi1000.profile`（基准 SH000300 / SH000905 / SH000852），历史成分股。
+- **划分**：train 2016-01-01–2020-12-31，valid 2021-01-01–2021-12-31，RD-Agent 选因子段（test）2021-01-01–2021-12-31；挖掘不读 2022 年以后。2022-01-01–2025-12-31 只在最后统一评测时使用。
+- **标签**：`Ref($close, -2)/Ref($close, -1) - 1`（1 日，官方原样）。
+- **模型**：DeepSeek 开放平台 `deepseek/deepseek-flash`（2026-11 时为 DeepSeek-V4.1-Flash-1017），`REASONING_EFFORT=none`（关闭思考），`CHAT_TEMPERATURE=1.0`，`CHAT_MAX_TOKENS=8192`。API 没有 seed，三次重复的差异来自 LLM 采样。Embedding：硅基流动 `BAAI/bge-m3`。
+- **预算**：每次运行 `--loop-n 36`（论文表 9 R&D-Factor GPT-4o 6 小时 36 轮），可加 `--all-duration 24h` 作为防卡死上限；记录实际用时、轮数和候选因子数。
+- **运行**：`source ~/.venvs/rdagent/bin/activate; set -a; source .env; source rdagent/scenarios/qlib/market_profiles/cn_csi300.profile; set +a; rdagent fin_factor --loop-n 36`，每次重复用新的日志目录，不从旧存档续跑，`USE_CHAT_CACHE` 保持关闭。
+
+与官方 1.0.0（`484776c2`）的差异：
+- 保留（缺陷修复与运行配套，2026-11-21 逐项核对）：
+  - 训练日志正则（`experiment/workspace.py`）：官方历史模板本来就有 `Training Log: {{ experiment.stdout }}` 并要求分析训练问题，但官方正则只匹配 PyTorch，LightGBM 日志被滤空；修复后历史记录中能看到 LightGBM 训练行。论文结果是在日志为空时跑的，此项让 LLM 比论文多看到这部分信息。
+  - 轮次编号两阶段一致、因子名全部重复时跳过本轮、提示词里的股票池名随设置变化、缓存键包含数据与配置指纹、mlflow 文件损坏重跑一次、venv 运行环境、Langfuse 追踪与续跑。
+  - 提示词信息（核对后不确定是否算方法改动，按修改后版本保留）：提想法时另列全部已接受实验；设计实验时另列历史因子（轮次、是否接受、公式）；所有环节附"实际执行协议"（股票池、基准、各时间段、标签、预处理、模型、组合规则）；完整执行数据概况与调试数据覆盖统计。
+  - 评估器调参：LightGBM 参数（learning_rate 0.01、colsample_bytree 1.0、num_leaves 64，官方 0.2/0.8879/210 会 1–5 棵树早停）；新因子与基线一样做 RobustZScoreNorm（截断极端值）+ Fillna（官方组合因子配置不做）。
+  - `reasoning_effort` 允许 `none`（关闭思考，`llm_conf.py`、`backend/litellm.py`）。
+- 恢复官方：因子数据说明 README（含 `$factor` 原文与无附加限制）、提示词示例标签 `[Machine Learning based Factor]`、由 LLM 判断是否接受因子（`QLIB_FACTOR_ACCEPTANCE_POLICY` 未设置即为 llm）；2026-11-21 又恢复三项：反馈提示词去掉 Current/SOTA Training Log 两行、反馈指标去掉 Rank IC（回到 IC/年化超额/最大回撤三项）、数据字段说明恢复为每次运行随机打乱一次顺序（`experiment/utils.py`）。
+- 官方原有、保持不变：跑满 15 轮后 RAG 提示改为尝试机器学习类因子（`factor_proposal.py`）。
+- 因子执行超时 `FACTOR_CoSTEER_FILE_BASED_EXECUTION_TIMEOUT=600`（论文附录 C.1 实现单元 600 秒；官方代码默认 3600）。超时后该次执行算失败，CoSTEER 最多重写 10 次，仍失败则丢弃该因子；整轮因子都失败时本轮记为失败，进入下一轮。

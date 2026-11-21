@@ -18,7 +18,6 @@ DIRNAME = Path(__file__).absolute().resolve().parent
 
 IMPORTANT_METRICS = [
     "IC",
-    "Rank IC",
     "1day.excess_return_with_cost.annualized_return",
     "1day.excess_return_with_cost.max_drawdown",
 ]
@@ -97,8 +96,6 @@ class QlibFactorExperiment2Feedback(Experiment2Feedback):
             hypothesis_text=hypothesis_text,
             task_details=tasks_factors,
             combined_result=combined_result,
-            current_training_log=exp.stdout,
-            sota_training_log=comparison.stdout,
         )
 
         # Call the APIBackend to generate the response for hypothesis feedback

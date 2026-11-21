@@ -23,6 +23,7 @@ from rdagent.scenarios.qlib.developer import feedback
 
 pytestmark = pytest.mark.offline
 ALL_METRICS = feedback.IMPORTANT_METRICS + [
+    "Rank IC",  # real qlib_res.csv always has it; the opt-in IC policy reads it
     "1day.excess_return_without_cost.annualized_return",
     "1day.excess_return_without_cost.max_drawdown",
 ]
@@ -313,7 +314,8 @@ def test_joint_feedback_compares_current_sota_system_not_stale_model_result(monk
     scen.get_scenario_all_desc.return_value = "TEST SCENARIO"
     feedback.QlibFactorExperiment2Feedback(scen).generate_feedback(candidate, value)
     assert "SOTA Result is 0.123456" in calls[0]["user_prompt"]
-    assert "Current Training Log" in calls[0]["user_prompt"]
+    # Official 1.0.0 factor feedback prompt has no training-log section (restored 2026-11-21).
+    assert "Current Training Log" not in calls[0]["user_prompt"]
 
 
 def test_data_fingerprint_changes_when_prices_change_but_calendar_does_not(tmp_path):

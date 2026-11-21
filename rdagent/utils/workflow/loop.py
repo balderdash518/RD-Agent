@@ -451,7 +451,9 @@ class LoopBase:
             with agent_run(
                 "run-rd-agent",
                 input_data=trace_input,
-                session_id=session_id_from_log_path(LOG_SETTINGS.trace_path),
+                # session_folder points back to the original run after a checkpoint resume; LOG_SETTINGS.trace_path
+                # is the new process's own timestamped folder, which would split one run into two sessions.
+                session_id=session_id_from_log_path(self.session_folder.parent),
                 tags=["rdagent", scenario, "agent-chain"],
                 metadata=run_metadata(self, scenario, run_id),
             ) as run_observation:

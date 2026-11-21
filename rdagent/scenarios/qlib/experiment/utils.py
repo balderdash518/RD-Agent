@@ -1,4 +1,5 @@
 import hashlib
+import random
 import re
 import shutil
 from functools import lru_cache
@@ -221,10 +222,13 @@ def get_file_desc(p: Path, variable_list=[]) -> str:
             df_info += relevant_line + "\n"
         else:
             df_info += "#### All Columns:\n"
-            for prefix, cols in sorted(grouped_columns.items()):
+            grouped_items = list(grouped_columns.items())
+            random.shuffle(grouped_items)
+            for prefix, cols in grouped_items:
                 header = "Other Columns" if prefix == "other" else f"{prefix} Related Columns"
                 df_info += f"\n#### {header}:\n"
-                line = ", ".join(f"{col}: {columns[col]}" for col in sorted(cols))
+                random.shuffle(cols)
+                line = ", ".join(f"{col}: {columns[col]}" for col in cols)
                 df_info += line + "\n"
 
         if "REPORT_PERIOD" in df.columns:

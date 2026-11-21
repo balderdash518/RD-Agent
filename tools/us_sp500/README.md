@@ -9,7 +9,7 @@
 | --- | --- |
 | Membership (2005 → today) | [fja05680/sp500](https://github.com/fja05680/sp500) `sp500_ticker_start_end.csv` (MIT), topped up with the current constituents table on Wikipedia for changes after its last snapshot |
 | Prices | Yahoo Finance chart API: daily OHLCV and adjusted close from 2005-01-01 |
-| Benchmark | `^GSPC` from Yahoo |
+| Benchmark | `^SP500TR` (S&P 500 total return, default; stock returns include dividends) and `^GSPC` (price index, also the trading calendar) from Yahoo |
 | Fallback prices | qlib's official US package (`qlib_data_us_1d_latest.zip`, ends 2020-11-10) for tickers Yahoo no longer serves |
 
 Conventions match qlib: `$close` is the split- and dividend-adjusted close, `$factor = adjusted / raw`,
