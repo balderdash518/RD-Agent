@@ -52,7 +52,9 @@ def get_embedding_max_tokens(model: str) -> int:
 
     # Level 2: Query mapping table
     if model_name in EMBEDDING_MODEL_LIMITS:
-        return EMBEDDING_MODEL_LIMITS[model_name]
+        # Token counts here come from a generic tokenizer and can undercount the provider's own;
+        # a smaller LLM_SETTINGS.embedding_max_length (as the error below advises) caps the limit.
+        return min(EMBEDDING_MODEL_LIMITS[model_name], LLM_SETTINGS.embedding_max_length)
 
     # Level 3: fallback to LLM_SETTINGS.embedding_max_length
     default_max_tokens = LLM_SETTINGS.embedding_max_length

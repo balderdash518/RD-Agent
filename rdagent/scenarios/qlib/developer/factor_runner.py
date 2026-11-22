@@ -142,7 +142,7 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
             # Sort and nest the combined factors under 'feature'
             combined_factors = combined_factors.sort_index()
             combined_factors = combined_factors.loc[:, ~combined_factors.columns.duplicated(keep="last")]
-            new_columns = pd.MultiIndex.from_product([["feature"], combined_factors.columns])
+            new_columns = pd.MultiIndex.from_product([["feature"], [str(c) for c in combined_factors.columns]])
             combined_factors.columns = new_columns
             logger.info(f"Factor data processing completed.")
 
@@ -204,7 +204,7 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
                 factors = process_factor_data(exp)
                 factors = factors.sort_index()
                 factors = factors.loc[:, ~factors.columns.duplicated(keep="last")]
-                new_columns = pd.MultiIndex.from_product([["feature"], factors.columns])
+                new_columns = pd.MultiIndex.from_product([["feature"], [str(c) for c in factors.columns]])
                 factors.columns = new_columns
                 target_path = exp.experiment_workspace.workspace_path / "combined_factors_df.parquet"
                 # Save the combined factors to the workspace
